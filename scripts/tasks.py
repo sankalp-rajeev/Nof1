@@ -31,8 +31,8 @@ def frontend(*args: str) -> None:
 
 
 def lint() -> None:
-    backend("ruff", "check", "app", "tests", "../scripts")
-    backend("ruff", "format", "--check", "app", "tests", "../scripts")
+    backend("ruff", "check", "app", "sim", "tests", "../scripts")
+    backend("ruff", "format", "--check", "app", "sim", "tests", "../scripts")
     backend("mypy")
     frontend("run", "lint")
     frontend("run", "typecheck")
@@ -92,6 +92,10 @@ def main(task: str) -> None:
         run(["docker", "compose", "up", "-d", "--wait", "postgres"])
     elif task == "migrate":
         backend("alembic", "upgrade", "head")
+    elif task == "sim-stats":
+        backend("-m", "sim.cli", "stats")
+    elif task == "eval-regression":
+        backend("-m", "sim.cli", "regression")
     elif task == "lint":
         lint()
     elif task == "test":

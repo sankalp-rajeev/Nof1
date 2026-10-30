@@ -45,7 +45,7 @@ make dev                   # backend + frontend
 
 - Never edit, delete, skip, xfail, or loosen a test or threshold to make a gate pass. If you believe a test is wrong, stop, explain in STATUS.md, and wait for the human.
 - Never change `evals/baselines/*` or run `make baseline-update` unless the human asks.
-- Never use held-out seeds (10000 to 10999) except inside `make eval-final`. Dev seeds are 0 to 999. Do not tune anything against held-out seeds.
+- Never use held-out seeds (10,000 to 10,999) except inside `make eval-final`. Dev seeds are 0 to 9,999 (cohorts A, A30, N, V as defined in PRD 10.1). Do not tune anything against held-out seeds.
 - Never call a live LLM or any network from tests. Tests use `FakeLLMClient` and recorded fixtures. Live calls happen only via `make eval-live` or `make eval-final`, which require `MAX_SPEND_USD` and `DATA_CLASS=synthetic`.
 - Never send real user data to the `deepseek` provider. Enforced in code (PRD 8.8) and tested.
 - Never invent API prices or model IDs. Read `config/prices.yaml` and env. If a price is missing, record cost as null and enforce the token cap instead.

@@ -15,4 +15,6 @@ coverage/
 *.tsbuildinfo
 evals/reports/*
 !evals/reports/.gitkeep
+!evals/reports/p3-stats.json
+!evals/reports/p3-stats.md
 !evals/reports/final*

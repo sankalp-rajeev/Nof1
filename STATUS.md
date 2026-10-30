@@ -1,6 +1,6 @@
 # STATUS
 
-CURRENT: P2
+CURRENT: P3
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -8,8 +8,8 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 |---|---|---|---|
 | P0 | Scaffold and tooling | [x] | [x] |
 | P1 | Domain and storage | [x] | [x] |
-| P2 | Stats engine | [x] | [ ] |
-| P3 | Simulator (stats-only) and eval harness | [ ] | [ ] |
+| P2 | Stats engine | [x] | [x] |
+| P3 | Simulator (stats-only) and eval harness | [x] | [ ] |
 | P4 | LLM infrastructure and safety | [ ] | [ ] |
 | P5 | Extraction, memory, chat orchestration | [ ] | [ ] |
 | P6 | Experiment loop | [ ] | [ ] |
@@ -166,7 +166,7 @@ legacy/new permutation-metadata tests passed. The 200-seed null-series guard pas
 Decisions added to DECISIONS.md: human-approved hybrid inference, direct MC convergence
 testing, pure snapshots and stable seeds, legacy provenance, floating-point ties and
 pairwise-complete alignment, and bounded protocol seeds.
-Needs human: approve P2 with `proceed to P3`; no P3 work has begun.
+P2 approved by the human's `proceed to P3` instruction on 2026-10-30.
 The human approved hybrid exact/MC permutation rules on 2026-10-30. PRD sections
 6, 7.3, and the P2 test requirements now record the formulas, stability rules,
 pattern metadata, and requested exact/convergence/threshold tests. Implementation resumed.
@@ -204,4 +204,76 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
    Duration  2.34s (environment 78%, setup 14%, tests 6%, transform 1%)
 
 P2 gate PASS
+```
+
+### P3 Stats-only simulator and evaluation harness (2026-10-30)
+
+Deliverables:
+- Generate seeded synthetic histories and continued experiments with isolated ground truth.
+- Score the specified cohorts and report false positives, recall, confounding, and verdicts.
+- Add stats-only CLI commands, regression comparison, and deterministic demo-seed selection.
+- Produce JSON/Markdown reports at both permutation budgets and an initial baseline for review.
+- Pass the offline cumulative P0-P3 gate and stop for human approval.
+
+Gate: `make gate PHASE=3` exited 0; 128 backend tests and 2 frontend tests passed.
+Pytest completed in 63.42 seconds while the independent report run was also active;
+the gate remains below the three-minute limit. `make eval-regression` exited 0.
+Built: seeded worlds and continued experiments, blind panel inputs, scoring and
+cohort orchestration, CLI/report generation, regression checks in CI, and demo seed 283.
+Decisions added to DECISIONS.md: approved seed-policy expansion, one-time baseline
+creation, fixed RNG streams/prefixes, and explicit cohort naming/order choices.
+Needs human: review and approve the initial baseline, then approve P3 with
+`proceed to P4`. No P4 work has begun.
+The human approved dev seeds 0..9999 and one-time initial baseline creation on
+2026-10-30. AGENTS.md and DECISIONS.md record the authorization. Held-out seeds
+10000..10999 remain restricted to make eval-final. Baseline generation will refuse
+to overwrite an existing file; once generated it remains pending human approval.
+
+Baseline: `evals/baselines/stats_baseline.json` generated once from A seeds 0..59
+and N seeds 2000..2099 at N_PERM_FAST. **Pending human approval**; do not regenerate
+or modify without a new explicit human request.
+Full report: `evals/reports/p3-stats.json` and `p3-stats.md` generated successfully.
+Fast/full E1 = 0.042105/0.055263, E2 = 0.873239/0.894366, E3 = 0.080000/0.080000.
+All hard metrics pass both budgets. Recall rises with |beta| and is substantially
+lower at T=30; full-budget |beta|=1 recall is 0.019231 at T=30 and 0.128205 at T=60.
+E1c full-budget flagged share = 15/113, unflagged = 1/113; the heuristic fires for
+most patients with a report on the confounded exposure. Held-out seeds untouched.
+The one-time small regression baseline measured E1=0.136364, E2=0.700000,
+E3=0.140000 on its explicitly recorded subset, not the full hard-gate cohorts.
+Those values remain unchanged and pending human approval.
+Baseline SHA-256: `8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257`.
+
+Gate output (last 30 lines, make gate PHASE=3):
+
+```text
+tests\test_stats_patterns.py ......................                      [ 77%]
+tests\test_stats_storage.py .......                                      [ 82%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 128 passed, 2 warnings in 63.42s (0:01:03) ==================
++ npm.cmd run test -- -t \[p[0-3]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-3]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  19:22:20
+   Duration  3.38s (environment 74%, setup 15%, tests 9%, transform 1%, import 1%)
+
+P3 gate PASS
 ```

@@ -1,0 +1,23 @@
+{
+  "approval": "pending human approval",
+  "components": {
+    "stats": {
+      "E1": 0.13636363636363635,
+      "E2": 0.7,
+      "E3": 0.14
+    }
+  },
+  "revision": "99e1602e33bf07a4baf2cf02e1d7a3b486e5bc8d",
+  "schema_version": 1,
+  "scope": {
+    "A": [
+      0,
+      59
+    ],
+    "N": [
+      2000,
+      2099
+    ],
+    "n_perm": 500
+  }
+}
