@@ -1,14 +1,14 @@
 # STATUS
 
-CURRENT: P1
+CURRENT: P2
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
 | Phase | Name | Gate | Human |
 |---|---|---|---|
 | P0 | Scaffold and tooling | [x] | [x] |
-| P1 | Domain and storage | [x] | [ ] |
-| P2 | Stats engine | [ ] | [ ] |
+| P1 | Domain and storage | [x] | [x] |
+| P2 | Stats engine | [x] | [ ] |
 | P3 | Simulator (stats-only) and eval harness | [ ] | [ ] |
 | P4 | LLM infrastructure and safety | [ ] | [ ] |
 | P5 | Extraction, memory, chat orchestration | [ ] | [ ] |
@@ -106,7 +106,7 @@ Built: 13 constrained PostgreSQL tables, typed schemas, transactional repositori
 59 aliases, deterministic correction resolution, and timezone/demo-clock helpers.
 Decisions added to DECISIONS.md: Windows timezone/driver dependencies, PostgreSQL
 upserts and cascades, deterministic event ties, and static migration testing.
-Needs human: approve P1 with `proceed to P2`; no P2 work has begun.
+P1 approved by the human's `proceed to P2` instruction on 2026-10-30.
 
 Test correction approved by the human on 2026-10-30: replace the mistaken count of 14
 with the exact 13 application table names from PRD section 6, excluding `alembic_version`.
@@ -146,4 +146,62 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
    Duration  1.21s (environment 73%, setup 16%, tests 9%, transform 1%)
 
 P1 gate PASS
+```
+
+### P2 Stats engine (2026-10-30)
+
+Deliverables:
+- Build pure daily panels with explicit missingness, corrections, and sleep exposure.
+- Implement seeded lagged block-permutation scans, BH correction, confounders, and evidence.
+- Generate the fixed experiment schedule and enforce exposure eligibility.
+- Compute seeded bootstrap verdicts with the specified completeness and consistency rules.
+- Add P2 tests and pass the offline cumulative P0-P2 gate.
+
+Gate: `make gate PHASE=2` exited 0; 111 backend tests and 2 frontend tests passed.
+Built: pure daily panels, seeded hybrid permutation scans, BH correction, confounder
+flags and evidence snapshots, fixed schedules, eligibility checks, and bootstrap verdicts.
+Additional verification: migration 0002 applied to the local development database;
+`alembic check` reported no new upgrade operations. All migration round-trip and
+legacy/new permutation-metadata tests passed. The 200-seed null-series guard passed.
+Decisions added to DECISIONS.md: human-approved hybrid inference, direct MC convergence
+testing, pure snapshots and stable seeds, legacy provenance, floating-point ties and
+pairwise-complete alignment, and bounded protocol seeds.
+Needs human: approve P2 with `proceed to P3`; no P3 work has begun.
+The human approved hybrid exact/MC permutation rules on 2026-10-30. PRD sections
+6, 7.3, and the P2 test requirements now record the formulas, stability rules,
+pattern metadata, and requested exact/convergence/threshold tests. Implementation resumed.
+
+Gate output (last 30 lines, make gate PHASE=2):
+
+```text
+tests\test_stats_patterns.py ......................                      [ 73%]
+tests\test_stats_storage.py .......                                      [ 80%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 111 passed, 2 warnings in 6.75s =======================
++ npm.cmd run test -- -t \[p[0-2]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-2]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  18:52:48
+   Duration  2.34s (environment 78%, setup 14%, tests 6%, transform 1%)
+
+P2 gate PASS
 ```

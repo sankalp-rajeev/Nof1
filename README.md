@@ -15,13 +15,15 @@ make setup
 # Copy .env.example to .env and configure local settings as needed.
 make db-up
 make migrate
-make gate PHASE=1
+make gate PHASE=2
 make dev
 ```
 
 Backend: http://localhost:8000/health. Frontend: http://localhost:3000.
-P1 adds validated domain records, PostgreSQL storage, name normalization, and timezone
-mapping. Chat, statistics, and LLM routing arrive in later phases. Tests use scripted
+P2 adds pure daily panels, hybrid exact/Monte Carlo lagged pattern scans, BH correction,
+confounder flags, experiment schedules, eligibility checks, and seeded bootstrap verdicts.
+P1 supplies validated domain records, PostgreSQL storage, name normalization, and timezone
+mapping. Chat and LLM routing arrive in later phases. Tests use scripted
 LLM responses, block outbound sockets/DNS, and access only the local test database.
 
 The storage suite requires an **empty** database whose name ends in `_test` and
@@ -34,3 +36,12 @@ pre-existing volume without it, run
 Dependencies are locked in `backend/uv.lock` and `frontend/package-lock.json`.
 The gate runs lint, strict type checks, and cumulative phase tests. It never
 downloads dependencies; run setup first. Live and final evaluations are manual.
+
+## Statistical limitations
+
+Observational results are possible patterns, not causes. The fixed experiment has
+four usable ON days and four OFF days at most, so power is low. Its day-level
+bootstrap ignores autocorrelation. The one-day washout assumes limited carryover;
+lag-two effects can contaminate later days. Results concern one person, and the
+experiment is not blinded. The larger simulator evaluation is scheduled for P3;
+P2's small seeded unit-test cohort is not a substitute for that evaluation.

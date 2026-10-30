@@ -159,6 +159,12 @@ class Pattern(Identity, UserOwned, Base):
         CheckConstraint("p_raw BETWEEN 0 AND 1 AND p_adj BETWEEN 0 AND 1", name="probabilities"),
         CheckConstraint("n_pairs >= 0 AND n_exposed >= 0 AND n_unexposed >= 0", name="counts"),
         CheckConstraint("window_start <= window_end", name="window"),
+        CheckConstraint(
+            "(perm_mode IS NULL AND n_valid IS NULL) OR "
+            "(perm_mode IS NOT NULL AND n_valid IS NOT NULL "
+            "AND perm_mode IN ('exact','mc') AND n_valid > 0)",
+            name="permutation_metadata",
+        ),
     )
     run_id: Mapped[UUID]
     pattern_key: Mapped[str]
@@ -172,6 +178,8 @@ class Pattern(Identity, UserOwned, Base):
     n_pairs: Mapped[int]
     n_exposed: Mapped[int]
     n_unexposed: Mapped[int]
+    perm_mode: Mapped[str | None]
+    n_valid: Mapped[int | None]
     confounder: Mapped[str | None]
     window_start: Mapped[date]
     window_end: Mapped[date]

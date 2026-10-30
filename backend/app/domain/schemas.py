@@ -157,6 +157,8 @@ class PatternRecord(DomainModel):
     n_pairs: int = Field(ge=0)
     n_exposed: int = Field(ge=0)
     n_unexposed: int = Field(ge=0)
+    perm_mode: Literal["exact", "mc"] | None = None
+    n_valid: int | None = Field(default=None, ge=1)
     confounder: str | None
     window_start: date
     window_end: date

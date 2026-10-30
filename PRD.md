@@ -206,7 +206,7 @@ ollama:*: {input: 0.0, output: 0.0}
 | checkins | id, user_id fk, local_date date, completed bool, checklist_answered bool, created_at, unique(user_id, local_date) |
 | events | id, user_id fk, message_id fk null, ts timestamptz, local_date date, kind ('meal','med','symptom','sleep','life'), name (canonical), raw_name, status ('done','skipped'), source ('chat','checklist','demo','sim'), value float null, unit text null, severity int null (0..10, symptom only), confidence float, created_at |
 | outcome_ratings | id, user_id fk, local_date, outcome_name, value int (0..10), updated_at, unique(user_id, local_date, outcome_name) |
-| patterns | id, user_id fk, run_id uuid, pattern_key text (`exposure|outcome|lag`), exposure, outcome, lag_days int, effect float, p_raw float, p_adj float, tier ('weak','moderate'), n_pairs, n_exposed, n_unexposed, confounder text null, window_start date, window_end date, data_points jsonb, surfaced_at null, computed_at |
+| patterns | id, user_id fk, run_id uuid, pattern_key text (`exposure|outcome|lag`), exposure, outcome, lag_days int, effect float, p_raw float, p_adj float, tier ('weak','moderate'), n_pairs, n_exposed, n_unexposed, perm_mode ('exact','mc'), n_valid, confounder text null, window_start date, window_end date, data_points jsonb, surfaced_at null, computed_at |
 | experiments | id, user_id fk, pattern_id fk null, exposure, outcome, status, end_reason text null, protocol jsonb, seed int, created_at, accepted_at null, started_on date null, ended_on date null, verdict jsonb null |
 | experiment_days | id, experiment_id fk, date, phase ('baseline','on','off'), washout bool, adherence bool null, updated_at, unique(experiment_id, date) |
 | llm_calls | id, trace_id, user_id null, purpose, provider, model, prompt_version, data_class, attempt int, input_tokens, output_tokens, latency_ms, cost_usd null, status ('ok','error','invalid','budget'), error text null, created_at |
@@ -280,11 +280,11 @@ For each (exposure e, outcome o, lag L in LAGS): pairs are days d where y_d and 
 - **Effect**: mean(y | x=1) - mean(y | x=0), in outcome units.
 - **Block permutation p-value**:
   - Split the calendar exposure array x (length T, NaNs included) into consecutive full blocks of BLOCK_LEN days starting at index 0. The trailing partial block, if any, stays in place.
-  - One permutation = a uniformly random reordering of the full blocks. NaNs move with their block. y is never permuted. Lag is applied after permuting.
-  - A permutation is valid if it yields pairs >= MIN_PAIRS and exposed >= MIN_GROUP and unexposed >= MIN_GROUP. Invalid permutations are redrawn, up to `PERM_MAX_DRAW_FACTOR * n_perm` total draws.
-  - If fewer than `PERM_MIN_VALID_SHARE * n_perm` valid permutations are obtained, the test is `unstable`: excluded from BH and never reported.
-  - Two-sided p = (1 + #valid permutations with |e_perm| >= |e_obs|) / (1 + n_valid).
-  - Resolution note: with T = 60 there are 15 full blocks (about 1.3e12 orderings), so the Monte Carlo p-value is well resolved. With T = 20 there are 5 blocks (120 orderings), so the smallest achievable p is about 1/121 and reports will be rare. This is intended. The power curve (E2b) shows it.
+  - NaNs move with their block. y is never permuted. Lag is applied after permuting. An ordering is valid if it yields pairs >= MIN_PAIRS and exposed >= MIN_GROUP and unexposed >= MIN_GROUP.
+  - **Exact mode** when `(number of full blocks)! <= n_perm`: enumerate every ordering of the full blocks, including the identity. Two-sided p = `#valid orderings with |e_perm| >= |e_obs| / n_valid`, without +1 because the identity is already counted. The test is unstable if `n_valid / total orderings < PERM_MIN_VALID_SHARE`. Record `perm_mode = 'exact'` and `n_valid` with the pattern.
+  - **Monte Carlo mode** otherwise: draw uniformly random reorderings of the full blocks. Invalid permutations are redrawn, up to `PERM_MAX_DRAW_FACTOR * n_perm` total draws, stopping once `n_perm` valid permutations are obtained. The test is unstable if fewer than `PERM_MIN_VALID_SHARE * n_perm` valid permutations are obtained. Two-sided p = `(1 + #valid permutations with |e_perm| >= |e_obs|) / (1 + n_valid)`. Record `perm_mode = 'mc'` and `n_valid` with the pattern.
+  - Unstable tests are excluded from BH and never reported in either mode.
+  - Resolution note: T = 60 gives 15 full blocks (about 1.3e12 orderings), so both configured permutation budgets select Monte Carlo. T = 20 gives 5 blocks (120 orderings), so both budgets select exact enumeration; the minimum attainable p is at least 1/120 and may be larger due to ties. The power curve (E2b) shows the resulting power.
   - RNG seed derived deterministically from (user_id, e, o, L, run purpose).
 - **Multiplicity**: Benjamini-Hochberg across all valid, stable tests in the scan, q = FDR_Q.
 - **Report** if p_adj <= FDR_Q and |effect| >= MIN_EFFECT.
@@ -796,7 +796,9 @@ Tests:
   - 200 seeded null series give a flagged share <= 0.15;
   - BH matches a reference implementation on known p-values;
   - a permutation that empties a group is redrawn, the unstable-test path is excluded from BH, and the p-value denominator equals n_valid;
-  - the p-value equals the exact enumeration result on a small calendar (5 blocks, all 120 orders, with `n_perm` large);
+  - exact mode on a 5-block calendar equals a hand-computed enumeration over all 120 orderings exactly;
+  - on a 6-block calendar, enumerate all 720 orderings in the test and verify that the Monte Carlo routine at n_perm = 2000 is within `3 * sqrt(p * (1-p) / n_perm) + 1/n_perm` of the exact p-value across several seeds (test the MC routine directly: the production selector chooses exact at this budget);
+  - mode selection switches at the factorial threshold for both N_PERM and N_PERM_FAST;
   - determinism with fixed seeds;
   - a confounder is flagged on a constructed confound, with alignment and tie-break rules tested.
 - **Experiment**:
