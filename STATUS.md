@@ -9,7 +9,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P0 | Scaffold and tooling | [x] | [x] |
 | P1 | Domain and storage | [x] | [x] |
 | P2 | Stats engine | [x] | [x] |
-| P3 | Simulator (stats-only) and eval harness | [x] | [ ] |
+| P3 | Simulator (stats-only) and eval harness | [x] | [x] |
 | P4 | LLM infrastructure and safety | [ ] | [ ] |
 | P5 | Extraction, memory, chat orchestration | [ ] | [ ] |
 | P6 | Experiment loop | [ ] | [ ] |
@@ -222,15 +222,15 @@ Built: seeded worlds and continued experiments, blind panel inputs, scoring and
 cohort orchestration, CLI/report generation, regression checks in CI, and demo seed 283.
 Decisions added to DECISIONS.md: approved seed-policy expansion, one-time baseline
 creation, fixed RNG streams/prefixes, and explicit cohort naming/order choices.
-Needs human: review and approve the initial baseline, then approve P3 with
-`proceed to P4`. No P4 work has begun.
+The human approved the baseline and authorized P4 after an absolute regression-gate
+fix on 2026-10-30. P4 will begin only after that follow-up is validated.
 The human approved dev seeds 0..9999 and one-time initial baseline creation on
 2026-10-30. AGENTS.md and DECISIONS.md record the authorization. Held-out seeds
 10000..10999 remain restricted to make eval-final. Baseline generation will refuse
-to overwrite an existing file; once generated it remains pending human approval.
+to overwrite an existing file. The baseline is now human-approved in this status log.
 
 Baseline: `evals/baselines/stats_baseline.json` generated once from A seeds 0..59
-and N seeds 2000..2099 at N_PERM_FAST. **Pending human approval**; do not regenerate
+and N seeds 2000..2099 at N_PERM_FAST. **Human-approved on 2026-10-30**; do not regenerate
 or modify without a new explicit human request.
 Full report: `evals/reports/p3-stats.json` and `p3-stats.md` generated successfully.
 Fast/full E1 = 0.042105/0.055263, E2 = 0.873239/0.894366, E3 = 0.080000/0.080000.
@@ -240,7 +240,8 @@ E1c full-budget flagged share = 15/113, unflagged = 1/113; the heuristic fires f
 most patients with a report on the confounded exposure. Held-out seeds untouched.
 The one-time small regression baseline measured E1=0.136364, E2=0.700000,
 E3=0.140000 on its explicitly recorded subset, not the full hard-gate cohorts.
-Those values remain unchanged and pending human approval.
+Those values remain unchanged. Approval is recorded here; creation-time metadata
+inside the frozen baseline and original P3 report remains untouched.
 Baseline SHA-256: `8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257`.
 
 Gate output (last 30 lines, make gate PHASE=3):
@@ -274,6 +275,65 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
       Tests  2 passed (2)
    Start at  19:22:20
    Duration  3.38s (environment 74%, setup 15%, tests 9%, transform 1%, import 1%)
+
+P3 gate PASS
+```
+
+### P3 absolute regression-gate follow-up (2026-10-30)
+
+The baseline is human-approved and its SHA-256 remains unchanged. Added a pure
+absolute comparator and unconditional CLI enforcement alongside relative drift;
+new tests cover each strict crossing, inclusive boundaries, and zero-drift failures.
+Focused verification: 9 scoring tests, Ruff, formatting, and strict mypy passed.
+`python -m sim.cli regression` exited 1 with:
+
+```text
+E2 absolute gate: 0.700000 < 0.850000
+E3 absolute gate: 0.140000 > 0.100000
+```
+
+The frozen regression subsets fail the absolute limits even though full A/N
+cohorts pass. The human clarified that absolute gates must use full A/N at
+N_PERM_FAST while relative checks retain the frozen subsets. CLI and PRD 10.3
+now reflect that scope. P4 will start after this follow-up passes validation.
+
+Follow-up resolved: full A/N absolute gates and frozen-subset drift checks both
+pass via `python -m sim.cli regression` (exit 0). `make gate PHASE=3` exited 0
+with 133 backend tests and 2 frontend tests. A CLI integration test proves the
+full/subset separation. Baseline SHA-256 is unchanged. P3 is human-approved, and
+P4 is authorized after this checked follow-up commit.
+
+Gate output (last 30 lines, follow-up make gate PHASE=3):
+
+```text
+tests\test_stats_patterns.py ......................                      [ 78%]
+tests\test_stats_storage.py .......                                      [ 83%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+====================== 133 passed, 2 warnings in 44.88s =======================
++ npm.cmd run test -- -t \[p[0-3]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-3]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  19:40:42
+   Duration  2.00s (environment 76%, setup 15%, tests 7%, transform 1%)
 
 P3 gate PASS
 ```

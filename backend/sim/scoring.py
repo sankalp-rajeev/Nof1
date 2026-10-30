@@ -3,7 +3,13 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from sim.config import REGRESSION_FALSE_POSITIVE_RISE, REGRESSION_RECALL_DROP
+from sim.config import (
+    E1_MAX,
+    E2_MIN,
+    E3_MAX,
+    REGRESSION_FALSE_POSITIVE_RISE,
+    REGRESSION_RECALL_DROP,
+)
 from sim.world import GroundTruth
 
 
@@ -78,4 +84,22 @@ def compare_regression(
         observed, reference = current["stats"][metric], baseline["stats"][metric]
         if (observed - reference) * direction > allowance + 1e-12:
             issues.append(f"{metric}: {observed:.6f} versus baseline {reference:.6f}")
+    return issues
+
+
+def compare_absolute_gates(current: dict[str, dict[str, float]]) -> list[str]:
+    """Reject absolute stats failures independently of baseline drift."""
+    if "stats" not in current:
+        return []
+    issues: list[str] = []
+    for metric, limit, minimum in [
+        ("E1", E1_MAX, False),
+        ("E2", E2_MIN, True),
+        ("E3", E3_MAX, False),
+    ]:
+        value = current["stats"][metric]
+        if value < limit if minimum else value > limit:
+            issues.append(
+                f"{metric} absolute gate: {value:.6f} {'<' if minimum else '>'} {limit:.6f}"
+            )
     return issues

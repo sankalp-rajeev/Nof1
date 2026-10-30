@@ -10,7 +10,7 @@ from sim.config import REGRESSION_A, REGRESSION_N
 from sim.demo import find_demo_seed
 from sim.report import read_baseline, stats_components, write_initial_baseline, write_reports
 from sim.runner import evaluate_suite
-from sim.scoring import compare_regression
+from sim.scoring import compare_absolute_gates, compare_regression
 
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE = ROOT / "evals" / "baselines" / "stats_baseline.json"
@@ -70,7 +70,10 @@ def main() -> int:
         print(f"Created {BASELINE}; pending human approval", flush=True)
         return 0
     if args.command == "regression":
-        issues = compare_regression(regression_components(), read_baseline(BASELINE))
+        current = regression_components()
+        issues = compare_regression(current, read_baseline(BASELINE))
+        full = evaluate_suite(n_perm=N_PERM_FAST, include_power=False, include_verdicts=False)
+        issues.extend(compare_absolute_gates(stats_components(full)))
         print(
             "\n".join(issues)
             if issues

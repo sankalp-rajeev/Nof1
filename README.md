@@ -51,6 +51,8 @@ P2's small seeded unit-test cohort is not a substitute for that evaluation.
 Run `make sim-stats` to evaluate A, A30, N, and V with both permutation budgets.
 Run `make eval-regression` to compare the fixed small cohorts against the initial
 baseline. Neither command calls an LLM or accesses held-out seeds.
+Regression also evaluates absolute E1/E2/E3 limits on full A/N cohorts at the fast
+permutation budget, independently of the small-cohort drift comparison.
 
 The [P3 report](evals/reports/p3-stats.md) and [JSON results](evals/reports/p3-stats.json)
 include every measured metric and the source digest. The revision identifies the
@@ -66,9 +68,10 @@ checked-out parent; the digest identifies the P3 source snapshot committed with 
 - Strong-effect experiments still return inconclusive in 65–66% of V cases,
   illustrating the fixed protocol's limited usable sample size.
 
-The initial `evals/baselines/stats_baseline.json` is **pending human approval**.
+The initial `evals/baselines/stats_baseline.json` is **human-approved in STATUS.md**.
 It was generated once under explicit authorization. Do not regenerate or modify it
 without a new explicit request.
+Its creation-time approval metadata remains unchanged; STATUS.md records the approval.
 Its smaller regression cohorts (A seeds 0–59 and N seeds 2000–2099) measured
 E1=0.1364, E2=0.7000, E3=0.1400. These are drift references; the full prescribed
 cohorts above determine the hard gates. The small subset is visibly noisier.

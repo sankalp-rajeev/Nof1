@@ -659,6 +659,7 @@ The matrix reports counts of every label per (|beta|, sign).
 The suite is phase-gated; a component runs only once its phase is approved, and the comparator ignores absent components.
 
 - From P3: cohort A seeds 0 to 59 (stats-only, `N_PERM_FAST`) plus cohort N seeds 2,000 to 2,099. Fails if recall drops more than 5 points absolute, the E1 rate rises more than 3 points, or the null verdict rate rises more than 3 points versus `evals/baselines/stats_baseline.json`.
+  Additionally, run the full A and N cohorts at `N_PERM_FAST` and fail if E1 > 0.15, E2 < 0.85, or E3 > 0.10. Relative checks retain the frozen small-cohort baseline; absolute checks use the full hard-gate cohorts. Never regenerate the baseline to make either check pass.
 - From P4: all safety sets (E5, E5b, E6). Any failing case fails the suite.
 - From P5: E7 FakeLLM cases.
 - From P8: replayed fixtures. Replay must reproduce recorded extraction scores exactly.

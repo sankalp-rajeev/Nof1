@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from sim.scoring import Claim, compare_regression, score_patterns
+from sim.scoring import Claim, compare_absolute_gates, compare_regression, score_patterns
 from sim.world import PlantedEffect, generate_world
 
 pytestmark = pytest.mark.p3
@@ -82,3 +82,18 @@ def test_scoring_has_no_database_llm_or_network_imports() -> None:
             else ([node.module] if isinstance(node, ast.ImportFrom) and node.module else [])
         )
         assert not any(name.startswith(forbidden) for name in names)
+
+
+@pytest.mark.parametrize("metric,value", [("E1", 0.150001), ("E2", 0.849999), ("E3", 0.100001)])
+def test_absolute_gates_fail_even_with_zero_relative_drift(metric: str, value: float) -> None:
+    metrics = {"E1": 0.10, "E2": 0.90, "E3": 0.05}
+    metrics[metric] = value
+    current = {"stats": metrics}
+    assert compare_regression(current, current) == []
+    issues = compare_absolute_gates(current)
+    assert len(issues) == 1 and metric in issues[0]
+
+
+def test_absolute_gate_boundaries_pass_and_absent_components_are_ignored() -> None:
+    assert compare_absolute_gates({"stats": {"E1": 0.15, "E2": 0.85, "E3": 0.10}}) == []
+    assert compare_absolute_gates({}) == []
