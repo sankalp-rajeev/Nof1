@@ -6,7 +6,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 
 | Phase | Name | Gate | Human |
 |---|---|---|---|
-| P0 | Scaffold and tooling | [ ] | [ ] |
+| P0 | Scaffold and tooling | [x] | [ ] |
 | P1 | Domain and storage | [ ] | [ ] |
 | P2 | Stats engine | [ ] | [ ] |
 | P3 | Simulator (stats-only) and eval harness | [ ] | [ ] |
@@ -21,6 +21,23 @@ Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recal
 
 ## Phase log
 
+### P0 Scaffold and tooling (2026-10-30)
+
+Deliverables:
+- Create the backend/frontend layout, locked dependencies, configuration, and health endpoint.
+- Define the typed LLM interface and a scripted record/replay fake.
+- Add offline phase-marked tests, cumulative gates, and strict quality checks.
+- Supply local PostgreSQL, CI, environment examples, and contributor documentation.
+
+Gate: `make gate PHASE=0` exited 0; 15 backend tests and 2 frontend tests passed.
+Additional verification: `npm.cmd run build` produced the static Next.js page successfully.
+Decisions added to DECISIONS.md: placeholder model routes/prices, portable command runner,
+Windows offline socket support, local GNU Make, and frontend test/build development dependencies.
+Needs human: approve P0 with `proceed to P1`; verify model IDs/prices before later live use.
+Existing user changes to PRD.md were read as the specification and excluded from P0 commits.
+Known non-failing warnings: upstream Starlette deprecates its httpx adapter; the network-blocking
+test emits the expected pytest-socket warning. No extra unapproved httpx2 dependency was added.
+
 Append one block per phase:
 
 ```
@@ -29,4 +46,39 @@ Deliverables: ...
 Gate output (last 30 lines): ...
 Decisions added to DECISIONS.md: ...
 Needs human: ...
+```
+
+Gate output (last 30 lines, make gate PHASE=0):
+
+```text
+collected 15 items
+
+tests\test_scaffold.py ...............                                   [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 15 passed, 2 warnings in 0.36s ========================
++ npm.cmd run test -- -t \[p[0-0]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-0]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  18:12:48
+   Duration  1.17s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P0 gate PASS
 ```

@@ -1,0 +1,32 @@
+[project]
+name = "nof1"
+version = "0.1.0"
+description = "Conversational N-of-1 research prototype"
+requires-python = ">=3.11,<3.12"
+dependencies = ["fastapi", "uvicorn", "pydantic>=2,<3", "pydantic-settings"]
+
+[dependency-groups]
+dev = ["pytest", "pytest-socket", "httpx", "ruff", "mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", ".."]
+addopts = "--strict-markers --disable-socket --allow-unix-socket"
+markers = [
+  "p0: scaffold and tooling", "p1: domain and storage", "p2: stats engine",
+  "p3: stats simulator", "p4: LLM infrastructure and safety", "p5: chat orchestration",
+  "p6: experiment loop", "p7: API and frontend", "p8: chat simulation",
+  "p9: polish and final evaluation", "live: manual network/LLM tests",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["app", "../scripts"]
