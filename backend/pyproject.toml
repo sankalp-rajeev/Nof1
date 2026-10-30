@@ -3,7 +3,17 @@ name = "nof1"
 version = "0.1.0"
 description = "Conversational N-of-1 research prototype"
 requires-python = ">=3.11,<3.12"
-dependencies = ["fastapi", "uvicorn", "pydantic>=2,<3", "pydantic-settings"]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic>=2,<3",
+    "pydantic-settings",
+    "sqlalchemy>=2,<3",
+    "psycopg[binary]>=3,<4",
+    "alembic>=1.20.1",
+    "rapidfuzz>=3.14.6",
+    "tzdata>=2026.6",
+]
 
 [dependency-groups]
 dev = ["pytest", "pytest-socket", "httpx", "ruff", "mypy"]

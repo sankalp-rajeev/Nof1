@@ -9,6 +9,15 @@ import pytest
 _SOCKET = socket.socket
 
 
+@pytest.fixture(scope="session", autouse=True)
+def test_environment() -> Iterator[None]:
+    """Prevent unrelated host application flags from changing test configuration."""
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("APP_ENV", "test")
+        patch.setenv("DEBUG", "false")
+        yield
+
+
 def _local_socketpair(
     family: int = socket.AF_INET, type: int = socket.SOCK_STREAM, proto: int = 0
 ) -> tuple[socket.socket, socket.socket]:

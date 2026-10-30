@@ -9,6 +9,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL_ROUTE = re.compile(r"(?:gemini|ollama|deepseek):[A-Za-z0-9][A-Za-z0-9._:/-]*\Z")
+FUZZY_MATCH_THRESHOLD = 90
+MAX_CORRECTION_DAYS = 6
+MAX_TRACKED_OUTCOMES = 3
+MAX_TRACKED_EXPOSURES = 5
+RATING_MIN = 0
+RATING_MAX = 10
+TIME_OF_DAY_HOURS = {"morning": 8, "afternoon": 14, "evening": 19, "night": 22, "unspecified": 12}
 
 
 class Settings(BaseSettings):

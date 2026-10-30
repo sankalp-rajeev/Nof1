@@ -1,0 +1,1 @@
+CREATE DATABASE nof1_test;

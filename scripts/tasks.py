@@ -89,7 +89,9 @@ def main(task: str) -> None:
         run(["uv", "sync", "--locked"], "backend")
         frontend("ci")
     elif task == "db-up":
-        run(["docker", "compose", "up", "-d", "postgres"])
+        run(["docker", "compose", "up", "-d", "--wait", "postgres"])
+    elif task == "migrate":
+        backend("alembic", "upgrade", "head")
     elif task == "lint":
         lint()
     elif task == "test":

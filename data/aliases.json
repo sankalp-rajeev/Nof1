@@ -1,0 +1,356 @@
+[
+  {
+    "alias": "magnesium",
+    "canonical": "magnesium",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "mag",
+    "canonical": "magnesium",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "magnesium glycinate",
+    "canonical": "magnesium",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "magnesium citrate",
+    "canonical": "magnesium",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "vitamin d",
+    "canonical": "vitamin d",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "vit d",
+    "canonical": "vitamin d",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "vitamin d3",
+    "canonical": "vitamin d",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "electrolytes",
+    "canonical": "electrolytes",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "electrolyte mix",
+    "canonical": "electrolytes",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "electrolyte drink",
+    "canonical": "electrolytes",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "digestive enzymes",
+    "canonical": "digestive enzymes",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "digestive enzyme",
+    "canonical": "digestive enzymes",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "enzyme supplement",
+    "canonical": "digestive enzymes",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "creatine",
+    "canonical": "creatine",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "creatine monohydrate",
+    "canonical": "creatine",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "omega-3",
+    "canonical": "omega-3",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "omega 3",
+    "canonical": "omega-3",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "fish oil",
+    "canonical": "omega-3",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "melatonin",
+    "canonical": "melatonin",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "melatonin supplement",
+    "canonical": "melatonin",
+    "kind": "med",
+    "category": "supplement"
+  },
+  {
+    "alias": "coffee",
+    "canonical": "coffee",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "espresso",
+    "canonical": "coffee",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "cold brew",
+    "canonical": "coffee",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "alcohol",
+    "canonical": "alcohol",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "beer",
+    "canonical": "alcohol",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "wine",
+    "canonical": "alcohol",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "gluten",
+    "canonical": "gluten",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "wheat",
+    "canonical": "gluten",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "dairy",
+    "canonical": "dairy",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "milk",
+    "canonical": "dairy",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "cheese",
+    "canonical": "dairy",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "sugar",
+    "canonical": "sugar",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "sugary snack",
+    "canonical": "sugar",
+    "kind": "meal",
+    "category": "food"
+  },
+  {
+    "alias": "walk",
+    "canonical": "walk",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "walking",
+    "canonical": "walk",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "evening walk",
+    "canonical": "walk",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "exercise",
+    "canonical": "exercise",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "workout",
+    "canonical": "exercise",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "gym",
+    "canonical": "exercise",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "nap",
+    "canonical": "nap",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "napping",
+    "canonical": "nap",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "afternoon nap",
+    "canonical": "nap",
+    "kind": "life",
+    "category": "habit"
+  },
+  {
+    "alias": "brain fog",
+    "canonical": "brain fog",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "fog",
+    "canonical": "brain fog",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "brainfog",
+    "canonical": "brain fog",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "bloating",
+    "canonical": "bloating",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "bloated",
+    "canonical": "bloating",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "headache",
+    "canonical": "headache",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "head ache",
+    "canonical": "headache",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "fatigue",
+    "canonical": "fatigue",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "tiredness",
+    "canonical": "fatigue",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "exhaustion",
+    "canonical": "fatigue",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "dizziness",
+    "canonical": "dizziness",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "dizzy",
+    "canonical": "dizziness",
+    "kind": "symptom",
+    "category": "symptom"
+  },
+  {
+    "alias": "antihistamine",
+    "canonical": "antihistamine",
+    "kind": "med",
+    "category": "otc_med"
+  },
+  {
+    "alias": "antihistamines",
+    "canonical": "antihistamine",
+    "kind": "med",
+    "category": "otc_med"
+  },
+  {
+    "alias": "prescription medication",
+    "canonical": "prescription medication",
+    "kind": "med",
+    "category": "rx_med"
+  },
+  {
+    "alias": "prescription medicine",
+    "canonical": "prescription medication",
+    "kind": "med",
+    "category": "rx_med"
+  },
+  {
+    "alias": "rx medication",
+    "canonical": "prescription medication",
+    "kind": "med",
+    "category": "rx_med"
+  }
+]
