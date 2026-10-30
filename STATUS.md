@@ -34,7 +34,9 @@ Additional verification: `npm.cmd run build` produced the static Next.js page su
 Decisions added to DECISIONS.md: placeholder model routes/prices, portable command runner,
 Windows offline socket support, local GNU Make, and frontend test/build development dependencies.
 Needs human: approve P0 with `proceed to P1`; verify model IDs/prices before later live use.
-Existing user changes to PRD.md were read as the specification and excluded from P0 commits.
+Existing user changes to PRD.md were read as the specification and excluded from the initial
+P0 scaffold commit. The human then requested publishing that PRD update and pushing directly
+to main after checks pass; AGENTS.md now records that workflow override.
 Known non-failing warnings: upstream Starlette deprecates its httpx adapter; the network-blocking
 test emits the expected pytest-socket warning. No extra unapproved httpx2 dependency was added.
 
@@ -47,6 +49,9 @@ Gate output (last 30 lines): ...
 Decisions added to DECISIONS.md: ...
 Needs human: ...
 ```
+
+Follow-up verification before the main push: `make check`, `make gate PHASE=0`,
+and `npm.cmd --prefix frontend run build` all exited 0.
 
 Gate output (last 30 lines, make gate PHASE=0):
 
@@ -65,7 +70,7 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
     raise SocketBlockedError()
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================= 15 passed, 2 warnings in 0.36s ========================
+======================= 15 passed, 2 warnings in 0.39s ========================
 + npm.cmd run test -- -t \[p[0-0]\]
 
 > nof1-frontend@0.1.0 test
@@ -77,8 +82,8 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
 
  Test Files  1 passed (1)
       Tests  2 passed (2)
-   Start at  18:12:48
-   Duration  1.17s (environment 73%, setup 16%, tests 9%, transform 1%)
+   Start at  18:21:01
+   Duration  1.24s (environment 73%, setup 16%, tests 9%, transform 1%, import 1%)
 
 P0 gate PASS
 ```

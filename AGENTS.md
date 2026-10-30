@@ -17,10 +17,10 @@ Nof1 is a conversational N-of-1 experiment agent for people with chronic conditi
 ## Phase protocol (strict)
 
 1. Work on exactly one phase: the one marked `CURRENT:` in STATUS.md.
-2. Start: create branch `phase/pN-slug`. In STATUS.md, list the deliverables for the phase in your own words (5 lines max).
+2. Start: work directly on `main` unless the human requests a separate branch. In STATUS.md, list the deliverables for the phase in your own words (5 lines max).
 3. Write tests first or alongside. Every test for phase N carries marker `pN` (pytest `@pytest.mark.pN`; for frontend, put `[pN]` in the describe name).
 4. Implement until `make gate PHASE=N` exits 0. The gate runs lint, type checks, and ALL tests for phases 0..N. Nothing in the gate touches the network or a live LLM.
-5. Paste the last 30 lines of gate output into STATUS.md, tick the gate box, commit with message `pN: <summary>`.
+5. Paste the last 30 lines of gate output into STATUS.md, tick the gate box, commit with message `pN: <summary>`, and push to `origin/main` after all required checks pass. Commit and push completed feature increments frequently; never push failing checks or overwrite remote history.
 6. STOP. Report: what was built, gate output, entries added to DECISIONS.md, and anything that needs a human. Do NOT start phase N+1 until the human writes `proceed to P{N+1}`. If the human writes `proceed through P{M} without stopping`, you may continue, but every gate must still pass, in order.
 7. Never move on with a red gate. If stuck after 3 serious attempts, stop and report the failure with evidence (command, output, what you tried).
 
