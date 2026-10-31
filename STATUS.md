@@ -2,12 +2,9 @@
 
 CURRENT: P6
 
-P7 HOLD (2026-10-31): diagnosis and six-message smoke fixes complete; P7 has not
-started. Conditional human approval for test/fixture edits was received and all
-conditions are implemented: typed named receipts, facts-only 14-case diff, original
-text-byte protection, new G7 cases, preserved G6 failures, fixed rating path and
-PRD 8.2 update. No thresholds or statistical baseline changed. New cases await
-human review; P6 phase approval remains separate.
+P6 approved (2026-10-31). The once-only blind G7 run and requested lookup/checklist
+follow-ups are complete, with a green gate. Human explicitly authorized P7 next,
+building the API and demo clock before the frontend. No threshold or baseline changed.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -19,7 +16,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P3 | Simulator (stats-only) and eval harness | [x] | [x] |
 | P4 | LLM infrastructure and safety | [x] | [x] |
 | P5 | Extraction, memory, chat orchestration | [x] | [x] |
-| P6 | Experiment loop | [x] | [ ] |
+| P6 | Experiment loop | [x] | [x] |
 | P7 | API and frontend | [ ] | [ ] |
 | P8 | Chat-mode simulation and live evals | [ ] | [ ] |
 | P9 | Deploy and polish | [ ] | [ ] |
@@ -27,6 +24,30 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P6 Blind G7 and final follow-ups (2026-10-31)
+
+Blind run exactly once: must-block 0/9 passed, failures 1-9; must-pass 3/3 passed,
+no failures. Original counts are frozen in evals/safety/probe-g7-run.json.
+Generalized write/state claims and added matching-receipt G7b counts. Folded all
+12 probes as probe-g7-* cases; seven new count cases are in review-g7b.md.
+All prior reviewed texts remain unchanged, including the 63-case byte-hash test.
+
+The seeded lookup exposed dropped preloaded evidence, then G4 date-format and G7
+wording rejections. Preserve the read-only snapshot and select the latest date in
+code; final reply: "The latest matching entry in the available timeline is on
+2026-10-30." Real Gemini analyzer plus planner: 2772 input / 29 output tokens,
+no additional dispatch, narration, rejection or fallback. The preloaded timeline
+was obtained through the read-only query tool.
+
+Remaining-name checklist reply: "Recorded your brain fog rating: 6. Quick check
+for today: coffee. Which did you have? Anything you don't mention counts as no."
+Zero LLM calls. Previously skipped magnesium is preserved, partial coverage stays
+unknown, and full coverage needs no redundant question. Updated PRD 7.2 and DECISIONS.
+
+`make gate PHASE=6`: PASS, 509 backend / 2 frontend tests. `make eval-regression`:
+PASS; red 71/71, benign false alarms 0/98, bad 108/108, good 75/75, no issues.
+Human approved P6 and explicitly authorized P7 after these follow-ups.
 
 ### P6 Analyzer diagnosis and chat correctness follow-up (2026-10-31)
 
@@ -859,6 +880,41 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
       Tests  2 passed (2)
    Start at  15:05:38
    Duration  1.24s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P6 gate PASS
+```
+
+### P6 blind-follow-up gate evidence (2026-10-31)
+
+```text
+tests\test_sim_scoring.py .........                                      [ 83%]
+tests\test_sim_world.py ......                                           [ 85%]
+tests\test_stats_experiment.py ......................                    [ 89%]
+tests\test_stats_panel.py ...                                            [ 89%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 95%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 509 passed, 1 warning in 36.30s =======================
++ npm.cmd run test -- -t \[p[0-6]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-6]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:32:24
+   Duration  53.89s (environment 81%, setup 18%)
 
 P6 gate PASS
 ```

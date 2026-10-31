@@ -229,11 +229,11 @@ class LLMRouter:
                 return replace(response, call_id=row.id)
         raise RuntimeError("Retry loop did not produce a response")
 
-    def mark_invalid(self, response: LLMResponse) -> None:
+    def mark_invalid(self, response: LLMResponse, *, reason: str = "schema_validation") -> None:
         if response.call_id is None:
             raise ValueError("Only routed responses can be marked invalid")
         with self.store.transaction() as tx:
             rows = tx.records(ids=[response.call_id])
             if len(rows) != 1:
                 raise ValueError("Trace row missing")
-            tx.put(rows[0].model_copy(update={"status": "invalid", "error": "schema_validation"}))
+            tx.put(rows[0].model_copy(update={"status": "invalid", "error": reason}))

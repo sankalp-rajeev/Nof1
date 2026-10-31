@@ -35,6 +35,7 @@ from app.agent.insights import InsightSurfacer
 from app.agent.llm.base import CallContext, ProviderError
 from app.agent.llm.cost import BudgetExceeded
 from app.agent.llm.router import LLMRouter
+from app.agent.lookup import lookup_query
 from app.agent.pending import (
     checklist_answer_supported,
     consume,
@@ -396,6 +397,7 @@ class Orchestrator:
             result_values: list[JsonValue] = []
             result_values.extend(loop.results)
             payload["tool_results"] = result_values
+            payload["query"] = lookup_query(content)
             pending = None
         result = compose(
             self.router,

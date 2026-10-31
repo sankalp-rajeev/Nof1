@@ -9,11 +9,11 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from app.agent.safety.config import (
-    ACKNOWLEDGEMENT_WORDS,
     CHECKIN_WORD_LIMIT,
     DIRECTIVE_WINDOW,
     MEDICINE_WORDS,
     NUMBER_WORDS,
+    PERSISTENCE_ACK_WORDS,
 )
 from app.config import ROOT
 from app.domain.normalize import load_aliases, normalize
@@ -22,6 +22,17 @@ from app.domain.schemas import Kind, Rating
 DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 NUMERAL_RE = re.compile(r"[-+]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)%?")
 PHASE_RE = re.compile(r"\b(?:BASELINE|ON|OFF)\b")
+PERSISTENCE_CLAIM_RE = re.compile(
+    r"\b(?:saved|logged|recorded|noted|added|updated|marked|stored|captured|entered|"
+    r"written|filed|registered)\b|"
+    r"\b(?:got|put|took|written)\b.{0,40}\bdown\b|"
+    r"\bon file\b|(?:\b(?:is|are|was|were)|'s)\s+in (?:your|the|our) (?:records|timeline|log)\b|"
+    r"\bcheck[ -]?in\s+(?:is|was|has been)\s+(?:complete|completed|finished)\b"
+)
+COUNT_RE = re.compile(
+    r"\b(?P<count>\d+(?:\.\d+)?|one|" + "|".join(NUMBER_WORDS) + r")\s+"
+    r"(?:(?:[a-z]+[ -]+){0,4})?(?P<unit>times?|entries|events?|ratings?|doses?|days?)\b"
+)
 
 
 class EventReceipt(BaseModel):
@@ -123,7 +134,7 @@ class OutputGuard:
 
     def check(self, text: str, facts: Facts) -> tuple[str, ...]:
         violations: list[str] = []
-        lowered = text.casefold().replace("’", "'")
+        lowered = text.casefold().replace("\u2019", "'")
         sentences = re.split(r"[!?]+\s*|(?<!\d)\.+\s*|(?<=\d)\.(?!\d)\s*", lowered)
         non_refusal = re.sub(
             r"\bi\s+(?:cannot|can't|can not|am unable to|do not|don't)\s+diagnose\b", "", lowered
@@ -147,6 +158,8 @@ class OutputGuard:
             violations.append("G6")
         if any(self._unsupported_save(sentence, facts) for sentence in sentences):
             violations.append("G7")
+        if any(self._wrong_receipt_count(sentence, facts) for sentence in sentences):
+            violations.append("G7b")
         return tuple(violations)
 
     def _unsupported_save(self, sentence: str, facts: Facts) -> bool:
@@ -158,10 +171,7 @@ class OutputGuard:
         )
 
     def _unsupported_clause(self, sentence: str, facts: Facts) -> bool:
-        claim = re.search(
-            r"\b(?:saved|logged|recorded|noted)\b",
-            sentence,
-        )
+        claim = PERSISTENCE_CLAIM_RE.search(sentence)
         if not claim:
             return False
         # Negation must qualify this claim, rather than any other part of the reply.
@@ -179,6 +189,8 @@ class OutputGuard:
             return False
         if not facts.events_logged and not facts.ratings_recorded:
             return True
+        if re.search(r"\bcheck[ -]?in\b.*\b(?:complete|completed|finished)\b", sentence):
+            return facts.details.get("checkin_complete") is not True
         is_rating = bool(re.search(r"\b(?:ratings?|scores?)\b", sentence))
         is_event = bool(
             re.search(
@@ -207,6 +219,16 @@ class OutputGuard:
             exposure = normalized.category in {"supplement", "otc_med", "rx_med", "food", "habit"}
             if is_rating and canonical not in rating_names:
                 return True
+            score = re.search(r"\b(?:score|rating)\s+(?:of\s+)?(\d+)\b", sentence)
+            if (
+                is_rating
+                and score
+                and not any(
+                    normalize(row.name).canonical == canonical and row.value == int(score[1])
+                    for row in facts.ratings_recorded
+                )
+            ):
+                return True
             if (is_event or exposure) and canonical not in event_names:
                 return True
             if canonical not in event_names | rating_names:
@@ -225,7 +247,48 @@ class OutputGuard:
         for name in sorted(mentioned, key=len, reverse=True):
             remaining = re.sub(r"\b" + re.escape(name) + r"\b", "", remaining)
         words = set(re.findall(r"[a-z]+", remaining.replace("'", "")))
-        return bool(words - ACKNOWLEDGEMENT_WORDS - set(NUMBER_WORDS))
+        return bool(words - PERSISTENCE_ACK_WORDS - set(NUMBER_WORDS))
+
+    def _wrong_receipt_count(self, sentence: str, facts: Facts) -> bool:
+        if not PERSISTENCE_CLAIM_RE.search(sentence):
+            return False
+        claims = [(match["count"], match["unit"]) for match in COUNT_RE.finditer(sentence)]
+        claims.extend(
+            (match[0], "times") for match in re.finditer(r"\b(?:once|twice|thrice)\b", sentence)
+        )
+        names = {
+            normalize(name).canonical
+            for name in self.names
+            if re.search(r"\b" + re.escape(name) + r"\b", sentence)
+        }
+        all_receipts: tuple[EventReceipt | RatingReceipt, ...] = (
+            *facts.events_logged,
+            *facts.ratings_recorded,
+        )
+        names |= {
+            normalize(row.name).canonical
+            for row in all_receipts
+            if re.search(r"\b" + re.escape(row.name.casefold()) + r"\b", sentence)
+        }
+        ratings = bool(re.search(r"\b(?:ratings?|scores?)\b", sentence))
+        receipts: list[EventReceipt | RatingReceipt] = (
+            list(facts.ratings_recorded) if ratings else list(facts.events_logged)
+        )
+        matching = [row for row in receipts if not names or normalize(row.name).canonical in names]
+        for count, unit in claims:
+            claimed = Decimal(str({"one": 1, "once": 1, **NUMBER_WORDS}.get(count, count)))
+            if unit.startswith("day") and re.search(
+                r"\bhalf\s+(?:of\s+)?(?:the\s+)?\d+\s+days\b", sentence
+            ):
+                claimed /= 2
+            actual = (
+                len({row.date for row in matching if row.date is not None})
+                if unit.startswith("day")
+                else len(matching)
+            )
+            if claimed != actual:
+                return True
+        return False
 
     @staticmethod
     def _causal(sentence: str, facts: Facts, names: set[str]) -> bool:

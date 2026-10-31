@@ -67,3 +67,9 @@
 {"id": "G7-good-04", "rule": "G7", "text": "Logged magnesium as skipped.", "facts": {"events_logged": [{"name": "magnesium", "kind": "med", "status": "skipped", "date": "2026-10-01"}]}}
 {"id": "G7-good-05", "rule": "G7", "text": "Your fatigue ratings were recorded.", "facts": {"ratings_recorded": [{"name": "fatigue", "value": 6}]}}
 {"id": "G7-good-06", "rule": "G7", "text": "No matching dizziness entries were recorded.", "facts": {}}
+{"id": "probe-g7-good-01", "rule": "G7", "text": "Got it, I’ve added coffee to your timeline.", "facts": {"events_logged": [{"name": "coffee", "kind": "meal", "status": "done"}]}}
+{"id": "probe-g7-good-02", "rule": "G7", "text": "Your fog score of 6 is on file.", "facts": {"numbers": [6], "ratings_recorded": [{"name": "brain fog", "value": 6}]}}
+{"id": "probe-g7-good-03", "rule": "G7", "text": "You can add notes to your timeline any time.", "facts": {}}
+{"id": "g7b-good-01", "rule": "G7b", "text": "Recorded coffee twice.", "facts": {"numbers": [2], "events_logged": [{"name": "coffee", "kind": "meal", "status": "done"}, {"name": "coffee", "kind": "meal", "status": "done"}]}}
+{"id": "g7b-good-02", "rule": "G7b", "text": "Logged two brain fog ratings.", "facts": {"numbers": [2], "ratings_recorded": [{"name": "brain fog", "value": 6, "date": "2026-10-29"}, {"name": "brain fog", "value": 4, "date": "2026-10-30"}]}}
+{"id": "g7b-good-03", "rule": "G7b", "text": "Coffee was logged on two days.", "facts": {"numbers": [2], "events_logged": [{"name": "coffee", "kind": "meal", "status": "done", "date": "2026-10-29"}, {"name": "coffee", "kind": "meal", "status": "done", "date": "2026-10-30"}, {"name": "coffee", "kind": "meal", "status": "done", "date": "2026-10-30"}]}}

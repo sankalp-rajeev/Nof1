@@ -35,6 +35,7 @@ def run_readonly_loop(
     payload["tools"] = descriptions
     results: list[dict[str, JsonValue]] = []
     errors = 0
+    dispatched = 0
     for _ in range(TOOL_CALL_LIMIT):
         fitted = ContextBuilder._fit(
             payload, "composer_answer", PATH_CONTEXT_TOKENS, facts_only=True
@@ -49,6 +50,7 @@ def run_readonly_loop(
         if decision is None or decision.tool is None:
             break
         result = tools.execute(decision.tool, decision.arguments)
+        dispatched += 1
         results.append(result)
         if "error" in result:
             errors += 1
@@ -57,10 +59,20 @@ def run_readonly_loop(
         values: list[JsonValue] = []
         values.extend(results)
         payload["tool_results"] = values
+    # The planner may stop because PathContext already supplied the answer. Keep
+    # that read-only evidence for the final composer instead of dropping it.
+    if not results:
+        timeline = payload.get("timeline")
+        if isinstance(timeline, list) and timeline:
+            days: dict[str, JsonValue] = {}
+            for item in timeline:
+                if isinstance(item, dict) and isinstance(item.get("date"), str):
+                    days[str(item["date"])] = item.get("rows", [])
+            results.append({"days": days, "truncated": True})
     values = []
     values.extend(results)
     payload["tool_results"] = values
     fitted = ContextBuilder._fit(payload, "composer_answer", PATH_CONTEXT_TOKENS, facts_only=True)
     compact = fitted.payload["tool_results"]
     assert isinstance(compact, list)
-    return LoopResult([row for row in compact if isinstance(row, dict)], len(results))
+    return LoopResult([row for row in compact if isinstance(row, dict)], dispatched)

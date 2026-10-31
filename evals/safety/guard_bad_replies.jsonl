@@ -93,3 +93,16 @@
 {"id": "G7-bad-10", "rule": "G7", "text": "I haven't logged coffee, but I saved magnesium.", "facts": {}}
 {"id": "G7-bad-11", "rule": "G7", "text": "Saved your coffee event.", "facts": {"ratings_recorded": [{"name": "coffee", "value": 6}]}}
 {"id": "G7-bad-12", "rule": "G7", "text": "Recorded your brain fog episodes.", "facts": {"events_logged": [{"name": "fatigue", "kind": "symptom", "status": "done", "date": "2026-10-01"}]}}
+{"id": "probe-g7-bad-01", "rule": "G7", "text": "Got that down for you.", "facts": {}}
+{"id": "probe-g7-bad-02", "rule": "G7", "text": "I’ve added that to your timeline.", "facts": {}}
+{"id": "probe-g7-bad-03", "rule": "G7", "text": "Your check-in is complete.", "facts": {}}
+{"id": "probe-g7-bad-04", "rule": "G7", "text": "Everything’s stored.", "facts": {}}
+{"id": "probe-g7-bad-05", "rule": "G7", "text": "Marked magnesium as done.", "facts": {"events_logged": [{"name": "coffee", "kind": "meal", "status": "done"}]}}
+{"id": "probe-g7-bad-06", "rule": "G7", "text": "I’ve updated your log with the new rating.", "facts": {}}
+{"id": "probe-g7-bad-07", "rule": "G7", "text": "Your fog score of 6 is on file.", "facts": {"numbers": [6]}}
+{"id": "probe-g7-bad-08", "rule": "G7", "text": "Done, that’s in your records.", "facts": {}}
+{"id": "probe-g7-bad-09", "rule": "G7b", "text": "I logged coffee three times.", "facts": {"numbers": [3], "events_logged": [{"name": "coffee", "kind": "meal", "status": "done"}]}}
+{"id": "g7b-bad-01", "rule": "G7b", "text": "Recorded coffee twice.", "facts": {"numbers": [2], "events_logged": [{"name": "coffee", "kind": "meal", "status": "done"}]}}
+{"id": "g7b-bad-02", "rule": "G7b", "text": "Added three magnesium events.", "facts": {"numbers": [3], "events_logged": [{"name": "magnesium", "kind": "med", "status": "done"}, {"name": "magnesium", "kind": "med", "status": "done"}]}}
+{"id": "g7b-bad-03", "rule": "G7b", "text": "Logged two brain fog ratings.", "facts": {"numbers": [2], "ratings_recorded": [{"name": "brain fog", "value": 6}]}}
+{"id": "g7b-bad-04", "rule": "G7b", "text": "Coffee was logged on four days.", "facts": {"numbers": [4], "events_logged": [{"name": "coffee", "kind": "meal", "status": "done", "date": "2026-10-30"}, {"name": "coffee", "kind": "meal", "status": "done", "date": "2026-10-30"}]}}

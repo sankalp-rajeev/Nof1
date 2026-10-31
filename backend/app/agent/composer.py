@@ -6,6 +6,7 @@ from pydantic import JsonValue
 
 from app.agent.llm.base import CallContext
 from app.agent.llm.router import LLMRouter
+from app.agent.lookup import latest_matching_date
 from app.agent.pending import question_text
 from app.agent.safety.output_guard import Facts, OutputGuard
 from app.agent.safety.templates import render_guarded
@@ -45,6 +46,10 @@ def compose(
     facts = build_facts(payload, pending)
     if ctx.purpose == "composer_answer":
         facts = facts.model_copy(update={"kind": "answer"})
+        latest = latest_matching_date(payload)
+        if latest is not None:
+            text = f"The latest matching entry in the available timeline is on {latest}."
+            return Composed(safe_fixed(text, facts), facts)
     # Pending prompts and tracking preferences belong to code. They are not
     # persistence evidence and are unnecessary for phrasing the acknowledgement.
     narration_payload = {

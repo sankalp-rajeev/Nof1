@@ -218,9 +218,15 @@ def next_question(
         and not checkin.checklist_answered
         and not progress.checklist_skipped
     ):
-        return ExposureChecklist(
-            type="exposure_checklist", date=day, names=[r.name for r in tracking.exposures]
-        )
+        stated = {
+            row.name
+            for row in repo.latest_events(user_id, day, day)
+            if row.kind not in {"symptom", "sleep"}
+        }
+        remaining = [row.name for row in tracking.exposures if row.name not in stated]
+        if remaining:
+            return ExposureChecklist(type="exposure_checklist", date=day, names=remaining)
+        repo.upsert_checkin(user_id, day, checklist_answered=True)
     adherence = repo.session.scalar(
         select(m.ExperimentDay)
         .join(m.Experiment)

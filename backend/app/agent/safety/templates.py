@@ -80,7 +80,7 @@ def render_guarded(router: LLMRouter, facts: Facts, *, ctx: CallContext) -> Guar
                 attempt > 0,
                 False,
             )
-        router.mark_invalid(response)
+        router.mark_invalid(response, reason="guard:" + ",".join(violations))
         messages.append(
             LLMMessage(
                 "system", "Regenerate using only FACTS; violations: " + ", ".join(violations)

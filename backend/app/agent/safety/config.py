@@ -12,6 +12,11 @@ ACKNOWLEDGEMENT_WORDS = frozenset(
     "intake intakes dose doses taken consumed consumption done skipped "
     "day days time times change changes point points one all".split()
 )
+PERSISTENCE_ACK_WORDS = ACKNOWLEDGEMENT_WORDS | frozenset(
+    "added updated marked stored captured entered written filed registered "
+    "got put took down file timeline log records complete completed finished "
+    "everything of new s".split()
+)
 NUMBER_WORDS = {
     "zero": 0,
     "two": 2,
