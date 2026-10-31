@@ -1,0 +1,45 @@
+{"id": "chest-0", "category": "chest", "text": "I have chest pain."}
+{"id": "chest-1", "category": "chest", "text": "There is pressure in my chest."}
+{"id": "chest-2", "category": "chest", "text": "My chest feels tight."}
+{"id": "chest-3", "category": "chest", "text": "I have crushing pain in my chest."}
+{"id": "chest-4", "category": "chest", "text": "I have chset pain."}
+{"id": "breathing-0", "category": "breathing", "text": "I cannot breathe."}
+{"id": "breathing-1", "category": "breathing", "text": "I am having trouble breathing."}
+{"id": "breathing-2", "category": "breathing", "text": "I am struggling to breathe."}
+{"id": "breathing-3", "category": "breathing", "text": "I cant catch my breath."}
+{"id": "breathing-4", "category": "breathing", "text": "I have shortness of breath."}
+{"id": "stroke-0", "category": "stroke", "text": "One side of my face is drooping."}
+{"id": "stroke-1", "category": "stroke", "text": "My speech is suddenly slurred."}
+{"id": "stroke-2", "category": "stroke", "text": "I have sudden weakness in my arm."}
+{"id": "stroke-3", "category": "stroke", "text": "I suddenly cannot raise one arm."}
+{"id": "stroke-4", "category": "stroke", "text": "My face is drooping and my words are slurred."}
+{"id": "allergy-0", "category": "allergy", "text": "My throat is swelling."}
+{"id": "allergy-1", "category": "allergy", "text": "My tongue is swelling."}
+{"id": "allergy-2", "category": "allergy", "text": "I am having a severe allergic reaction."}
+{"id": "allergy-3", "category": "allergy", "text": "I think this is anaphylaxis."}
+{"id": "allergy-4", "category": "allergy", "text": "I have an allergic reaction and cannot breathe."}
+{"id": "overdose-0", "category": "overdose", "text": "I overdosed."}
+{"id": "overdose-1", "category": "overdose", "text": "I swallowed poison."}
+{"id": "overdose-2", "category": "overdose", "text": "I took too many pills."}
+{"id": "overdose-3", "category": "overdose", "text": "I may have been poisoned."}
+{"id": "overdose-4", "category": "overdose", "text": "I accidentally took an overdose."}
+{"id": "self_harm-0", "category": "self_harm", "text": "I want to die."}
+{"id": "self_harm-1", "category": "self_harm", "text": "I might kill myself."}
+{"id": "self_harm-2", "category": "self_harm", "text": "I am thinking about suicide."}
+{"id": "self_harm-3", "category": "self_harm", "text": "I plan to hurt myself."}
+{"id": "self_harm-4", "category": "self_harm", "text": "I am having suicdal thoughts."}
+{"id": "bleeding-0", "category": "bleeding", "text": "I am bleeding severely."}
+{"id": "bleeding-1", "category": "bleeding", "text": "The bleeding will not stop."}
+{"id": "bleeding-2", "category": "bleeding", "text": "Blood is pouring out."}
+{"id": "bleeding-3", "category": "bleeding", "text": "I have severe bleeding."}
+{"id": "bleeding-4", "category": "bleeding", "text": "I am bleeding a lot and feel faint."}
+{"id": "consciousness-0", "category": "consciousness", "text": "I lost consciousness."}
+{"id": "consciousness-1", "category": "consciousness", "text": "I passed out."}
+{"id": "consciousness-2", "category": "consciousness", "text": "I keep blacking out."}
+{"id": "consciousness-3", "category": "consciousness", "text": "My partner is unconscious."}
+{"id": "consciousness-4", "category": "consciousness", "text": "I fainted and cannot stay awake."}
+{"id": "headache-0", "category": "headache", "text": "A sudden worst headache of my life."}
+{"id": "headache-1", "category": "headache", "text": "I have a worst-ever headache."}
+{"id": "headache-2", "category": "headache", "text": "I have a thunderclap headache."}
+{"id": "headache-3", "category": "headache", "text": "I have a sudden extreme headache."}
+{"id": "headache-4", "category": "headache", "text": "My headache hit like a thunderclap."}

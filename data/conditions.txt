@@ -1,0 +1,37 @@
+diabetes
+asthma
+lupus
+cancer
+migraine
+depression
+pots
+postural tachycardia syndrome
+celiac disease
+coeliac disease
+irritable bowel syndrome
+ibs
+long covid
+chronic fatigue syndrome
+me/cfs
+multiple sclerosis
+parkinson's disease
+epilepsy
+arthritis
+rheumatoid arthritis
+fibromyalgia
+crohn's disease
+ulcerative colitis
+hypertension
+high blood pressure
+heart failure
+heart disease
+thyroid disease
+hypothyroidism
+hyperthyroidism
+anxiety disorder
+bipolar disorder
+schizophrenia
+pneumonia
+sepsis
+stroke
+anaphylaxis

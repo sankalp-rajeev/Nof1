@@ -1,6 +1,6 @@
 # STATUS
 
-CURRENT: P3
+CURRENT: P4
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -10,7 +10,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P1 | Domain and storage | [x] | [x] |
 | P2 | Stats engine | [x] | [x] |
 | P3 | Simulator (stats-only) and eval harness | [x] | [x] |
-| P4 | LLM infrastructure and safety | [ ] | [ ] |
+| P4 | LLM infrastructure and safety | [x] | [ ] |
 | P5 | Extraction, memory, chat orchestration | [ ] | [ ] |
 | P6 | Experiment loop | [ ] | [ ] |
 | P7 | API and frontend | [ ] | [ ] |
@@ -336,4 +336,76 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
    Duration  2.00s (environment 76%, setup 15%, tests 7%, transform 1%)
 
 P3 gate PASS
+```
+
+### P4 LLM infrastructure and safety (2026-10-30)
+
+Deliverables:
+- Route typed provider calls with per-user data policy and database-backed attempt traces.
+- Enforce spend, token, and daily-call budgets, retries, timeouts, and structured validation.
+- Load versioned prompts without treating user text as system instructions.
+- Add deterministic inbound escalation, outbound G1-G6 guards, and fixed fallbacks.
+- Build offline safety datasets and pass the cumulative P0-P4 gate and regression checks.
+
+Gate: `make gate PHASE=4` exited 0; 216 backend tests and 2 frontend tests passed.
+All lint, formatting, strict mypy, ESLint, and TypeScript checks passed.
+
+Built typed Gemini/OpenAI-compatible adapters, per-user provider policy, SQL attempt
+traces, locked budget reservations, bounded status retries, structured validation,
+seven versioned prompts, deterministic inbound checks, G1-G6 output guards, and
+fixed regeneration/fallback templates. Mocked SDK tests exercise retries and
+timeouts; SQL tests verify persisted metadata and cross-router app budgets.
+
+Offline safety scores: E5 45/45, E5b 0/66 false alarms, E6 48/48 unsafe replies
+blocked and 48/48 safe replies accepted. Each guard has eight positive and eight
+negative fixtures. `python -m sim.cli safety-regression` exited 0.
+`make eval-regression` exited 0: frozen-subset drift and full A/N absolute gates
+pass. P4 safety joins that command after human phase approval; its explicit
+review command already checks every case and fails on any mismatch.
+
+The approved stats baseline was neither regenerated nor modified. SHA-256 remains
+`8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257`.
+No live LLM, paid command, or held-out seed was used.
+
+DECISIONS.md records adapter retry ownership, conservative reservations, budget
+scope, stored identity checks, prompt/log privacy, guard wording, phase-gated
+safety regression, YAML type stubs, and deterministic attempt ordering.
+
+Human action: review all four `evals/safety/*.jsonl` datasets using
+`evals/safety/README.md` before approving P4. Missing verified model IDs and prices
+remain intentionally unfilled for later live evaluation. P5 has not started.
+
+Gate output (last 30 lines, make gate PHASE=4):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 62%]
+tests\test_sim_world.py ......                                           [ 64%]
+tests\test_stats_experiment.py ......................                    [ 75%]
+tests\test_stats_panel.py ...                                            [ 76%]
+tests\test_stats_patterns.py ......................                      [ 86%]
+tests\test_stats_storage.py .......                                      [ 89%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 216 passed, 1 warning in 21.51s =======================
++ npm.cmd run test -- -t \[p[0-4]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-4]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  20:06:06
+   Duration  1.24s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P4 gate PASS
 ```

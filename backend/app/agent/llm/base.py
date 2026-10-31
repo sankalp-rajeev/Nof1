@@ -27,6 +27,20 @@ class LLMResponse:
     text: str
     input_tokens: int = 0
     output_tokens: int = 0
+    call_id: UUID | None = None
+
+
+class PolicyError(RuntimeError):
+    """The per-call data policy rejected an attempt before provider access."""
+
+
+class ProviderError(RuntimeError):
+    def __init__(
+        self, code: str, *, status_code: int | None = None, route: str | None = None
+    ) -> None:
+        self.code = code
+        self.status_code = status_code
+        super().__init__(code if route is None else f"{code}: {route}")
 
 
 class LLMClient(Protocol):

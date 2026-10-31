@@ -1,7 +1,8 @@
-"""Offline P3 commands. No provider SDKs or held-out evaluation entry points."""
+"""Offline phase-gated regression and simulation commands; no provider calls."""
 
 import argparse
 import hashlib
+import re
 import subprocess
 from pathlib import Path
 
@@ -14,6 +15,19 @@ from sim.scoring import compare_absolute_gates, compare_regression
 
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE = ROOT / "evals" / "baselines" / "stats_baseline.json"
+
+
+def phase_approved(phase: int) -> bool:
+    status = (ROOT / "STATUS.md").read_text(encoding="utf-8")
+    return bool(re.search(rf"^\| P{phase} \|[^\n]*\| \[x\] \| \[x\] \|$", status, re.M))
+
+
+def safety_regression() -> list[str]:
+    from app.agent.safety.evaluation import evaluate_safety
+
+    report = evaluate_safety()
+    print(report.model_dump_json(indent=2), flush=True)
+    return report.issues
 
 
 def revision() -> str:
@@ -54,9 +68,14 @@ def regression_components() -> dict[str, dict[str, float]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["stats", "regression", "init-baseline", "find-demo"])
+    parser.add_argument(
+        "command",
+        choices=["stats", "regression", "safety-regression", "init-baseline", "find-demo"],
+    )
     parser.add_argument("--output", type=Path, default=ROOT / "evals" / "reports")
     args = parser.parse_args()
+    if args.command == "safety-regression":
+        return int(bool(safety_regression()))
     if args.command == "find-demo":
         print(find_demo_seed(), flush=True)
         return 0
@@ -74,6 +93,10 @@ def main() -> int:
         issues = compare_regression(current, read_baseline(BASELINE))
         full = evaluate_suite(n_perm=N_PERM_FAST, include_power=False, include_verdicts=False)
         issues.extend(compare_absolute_gates(stats_components(full)))
+        if phase_approved(4):
+            issues.extend(safety_regression())
+        else:
+            print("P4 safety regression pending human approval; run safety-regression for review")
         print(
             "\n".join(issues)
             if issues

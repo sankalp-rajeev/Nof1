@@ -15,7 +15,7 @@ make setup
 # Copy .env.example to .env and configure local settings as needed.
 make db-up
 make migrate
-make gate PHASE=3
+make gate PHASE=4
 make dev
 ```
 
@@ -23,7 +23,8 @@ Backend: http://localhost:8000/health. Frontend: http://localhost:3000.
 P2 adds pure daily panels, hybrid exact/Monte Carlo lagged pattern scans, BH correction,
 confounder flags, experiment schedules, eligibility checks, and seeded bootstrap verdicts.
 P1 supplies validated domain records, PostgreSQL storage, name normalization, and timezone
-mapping. Chat and LLM routing arrive in later phases. Tests use scripted
+mapping. P4 supplies provider routing, budgets, traces, prompts, and deterministic
+safety checks; chat orchestration arrives in P5. Tests use scripted
 LLM responses, block outbound sockets/DNS, and access only the local test database.
 
 The storage suite requires an **empty** database whose name ends in `_test` and
@@ -75,3 +76,17 @@ Its creation-time approval metadata remains unchanged; STATUS.md records the app
 Its smaller regression cohorts (A seeds 0–59 and N seeds 2000–2099) measured
 E1=0.1364, E2=0.7000, E3=0.1400. These are drift references; the full prescribed
 cohorts above determine the hard gates. The small subset is visibly noisier.
+
+## LLM infrastructure and safety (P4)
+
+Provider calls use `LLMRouter`, persisted per-attempt budgets and traces, and
+stored user data classification. DeepSeek is restricted to synthetic users.
+Missing model configuration fails with the purpose and model route; missing
+prices record null cost while token limits remain enforced. Set verified model
+routes in the environment and maintain verified rates in `config/prices.yaml`
+before any later, explicitly authorized live evaluation.
+
+Run `cd backend` then `uv run --offline --no-sync python -m sim.cli safety-regression`
+to score all P4 safety fixtures without a provider. The component joins
+`make eval-regression` after P4 human approval is recorded in STATUS.md.
+The [safety review guide](evals/safety/README.md) lists the files requiring review.
