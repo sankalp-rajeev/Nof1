@@ -199,7 +199,7 @@ ollama:*: {input: 0.0, output: 0.0}
 | Table | Columns |
 |---|---|
 | users | id uuid pk, created_at, tz text default 'UTC', is_demo bool, data_class text ('real' or 'synthetic'), track_sleep bool default false, clock_offset_days int default 0 |
-| messages | id uuid pk, user_id fk, role ('user','assistant'), content text, client_msg_id uuid null, created_at, trace_id uuid; unique(user_id, client_msg_id) |
+| messages | id uuid pk, user_id fk, role ('user','assistant'), content text, response_payload jsonb null (assistant API replay envelope), client_msg_id uuid null, created_at, trace_id uuid; unique(user_id, client_msg_id) |
 | conversation_state | user_id pk fk, pending jsonb null, last_was_clarification bool default false, progress jsonb default '{}' (onboarding stage, local date, daily skipped questions, last suggestion date), updated_at |
 | tracked_outcomes | id, user_id fk, name, direction_better ('lower','higher'), active bool, created_at |
 | tracked_exposures | id, user_id fk, name (canonical), active bool, created_at, declined bool default false (user said no to tracking) |

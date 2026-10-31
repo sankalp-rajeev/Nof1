@@ -1,10 +1,8 @@
 # STATUS
 
-CURRENT: P6
+CURRENT: P7
 
-P6 approved (2026-10-31). The once-only blind G7 run and requested lookup/checklist
-follow-ups are complete, with a green gate. Human explicitly authorized P7 next,
-building the API and demo clock before the frontend. No threshold or baseline changed.
+P7 authorized (2026-10-31), API and demo clock first, frontend second.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -24,6 +22,24 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P7 API and frontend (2026-10-31)
+
+Deliverables:
+- Expose scoped cookie-identity routes, validation, rate limits, CORS and deletion.
+- Load the pinned demo and advance its clock/data deterministically with no LLM.
+- Verify scheduled days upserts, future/outside-date errors and terminal immutability.
+- Build the specified mobile-first journal panes with explicit safety/phase/verdict styling.
+- Supply container/deploy instructions, endpoint/component tests and manual smoke evidence.
+
+Gate [ ]: pending. Human [ ]: pending. Build API/demo before frontend per instruction.
+
+API increment: all section 11 routes, cookie identity, errors, CORS and rate limit
+implemented. Migration 0005 stores the exact chat replay envelope. Eight API tests
+cover demo load/advance with zero LLM calls, daily-vs-bulk clock equivalence,
+scheduled-day upserts/422/409/scope, red flags, idempotency and deletion.
+`make gate PHASE=7` passed for this API increment: 517 backend / 2 existing frontend
+tests. Frontend and container/deploy deliverables remain; phase gate table stays open.
 
 ### P6 Blind G7 and final follow-ups (2026-10-31)
 
@@ -917,4 +933,39 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
    Duration  53.89s (environment 81%, setup 18%)
 
 P6 gate PASS
+```
+
+### P7 API increment gate evidence (2026-10-31)
+
+```text
+tests\test_sim_scoring.py .........                                      [ 84%]
+tests\test_sim_world.py ......                                           [ 85%]
+tests\test_stats_experiment.py ......................                    [ 89%]
+tests\test_stats_panel.py ...                                            [ 90%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 95%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 517 passed, 1 warning in 50.31s =======================
++ npm.cmd run test -- -t \[p[0-7]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-7]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:43:08
+   Duration  1.29s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P7 gate PASS
 ```

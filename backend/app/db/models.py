@@ -73,6 +73,7 @@ class Message(Identity, Created, UserOwned, Base):
     )
     role: Mapped[str]
     content: Mapped[str]
+    response_payload: Mapped[dict[str, JsonValue] | None] = mapped_column(JSONB)
     client_msg_id: Mapped[UUID | None]
     trace_id: Mapped[UUID]
 

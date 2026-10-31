@@ -1,0 +1,1 @@
+"""Cookie-scoped application API."""
