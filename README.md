@@ -107,3 +107,17 @@ conversation_state table. The API and frontend chat integration remain P7 work.
 The cumulative P5 gate includes 25 E7 adversarial FakeLLM cases, concurrency,
 SQL tracing, privacy, context limits, and repeated-run database cleanup checks.
 E7 joins `make eval-regression` after P5 human approval is recorded in STATUS.md.
+
+## Manual development chat
+
+Run `make chat` with `APP_ENV=dev`, a migrated local non-test PostgreSQL database,
+and verified Gemini routes and key in `.env`. This command makes real model calls
+under the configured token/spend caps. It creates a synthetic throwaway user,
+starts onboarding, and sends each input line through the normal orchestrator.
+Use EOF, Ctrl-C, or `/quit` to finish and delete the user's rows.
+
+Replies appear in the terminal alongside content-free `llm_calls` metadata,
+including validation/error status, usage, regeneration, and fallback flags.
+Error-row token reservations are marked estimated. Message text is not written
+to application logs. Other app environments, remote/test databases, non-Gemini
+routes, and unconfigured model placeholders are refused before any provider call.

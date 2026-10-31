@@ -11,7 +11,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P2 | Stats engine | [x] | [x] |
 | P3 | Simulator (stats-only) and eval harness | [x] | [x] |
 | P4 | LLM infrastructure and safety | [x] | [x] |
-| P5 | Extraction, memory, chat orchestration | [x] | [ ] |
+| P5 | Extraction, memory, chat orchestration | [x] | [x] |
 | P6 | Experiment loop | [ ] | [ ] |
 | P7 | API and frontend | [ ] | [ ] |
 | P8 | Chat-mode simulation and live evals | [ ] | [ ] |
@@ -655,6 +655,64 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
       Tests  2 passed (2)
    Start at  13:26:46
    Duration  1.25s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P5 gate PASS
+```
+
+### P5 accepted; dev-only chat prelude (2026-10-31)
+
+Human accepted P5 and authorized make chat plus six live Gemini smoke cases before P6.
+Added a manual dev-only terminal REPL with local non-test DB checks, configured-Gemini
+preflight, a synthetic throwaway user, cleanup, replies, and content-free trace metadata.
+No dependency or API route was added. Nine offline dev-tool checks passed.
+Missing non-secret .env settings were added exactly as requested; the existing key
+line is byte-for-byte unchanged. .env is gitignored, untracked, and absent from status.
+
+Manual observations (no application/prompt behavior fixes made):
+- Initial onboarding: provider_status; prepared tracking only to establish scenario preconditions.
+- Cases 1, 2, 4, 6: analyzer provider_status; no extraction/refusal/tool branch reached.
+- Case 3: no analyzer call; composer succeeded but implied intake had been recorded.
+- Case 5: fixed escalation, zero LLM calls.
+- Validation rejections: zero; output-guard regenerations/fallbacks: zero.
+- Case input/output token rows: 1=1290/800 estimated; 2=1325/800 estimated;
+  3=297/339 actual; 4=1371/800 estimated; 5=0/0; 6=1404/800 estimated.
+- Error-row counts are reserved estimates; cost remains null with missing prices.
+- Verified normal-exit cascade deletion of the throwaway user and all child rows.
+
+Gate: make gate PHASE=5 exited 0 with 442 backend tests and 2 frontend tests.
+P6 is explicitly authorized after this prelude; the live issues remain unfixed.
+
+Gate output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 81%]
+tests\test_sim_world.py ......                                           [ 82%]
+tests\test_stats_experiment.py ......................                    [ 87%]
+tests\test_stats_panel.py ...                                            [ 88%]
+tests\test_stats_patterns.py ......................                      [ 93%]
+tests\test_stats_storage.py .......                                      [ 95%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 442 passed, 1 warning in 26.99s =======================
++ npm.cmd run test -- -t \[p[0-5]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-5]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:42:58
+   Duration  1.28s (environment 74%, setup 16%, tests 8%, transform 1%)
 
 P5 gate PASS
 ```

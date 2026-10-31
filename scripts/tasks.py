@@ -105,6 +105,8 @@ def main(task: str) -> None:
         tests()
     elif task == "dev":
         dev()
+    elif task == "chat":
+        backend("-m", "app.dev_chat")
     else:
         raise SystemExit(f"{task} is reserved for a later phase; see STATUS.md and PRD.md.")
 
