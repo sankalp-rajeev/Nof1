@@ -15,7 +15,7 @@ make setup
 # Copy .env.example to .env and configure local settings as needed.
 make db-up
 make migrate
-make gate PHASE=4
+make gate PHASE=5
 make dev
 ```
 
@@ -24,7 +24,7 @@ P2 adds pure daily panels, hybrid exact/Monte Carlo lagged pattern scans, BH cor
 confounder flags, experiment schedules, eligibility checks, and seeded bootstrap verdicts.
 P1 supplies validated domain records, PostgreSQL storage, name normalization, and timezone
 mapping. P4 supplies provider routing, budgets, traces, prompts, and deterministic
-safety checks; chat orchestration arrives in P5. Tests use scripted
+safety checks; P5 adds the backend chat workflow. Tests use scripted
 LLM responses, block outbound sockets/DNS, and access only the local test database.
 
 The storage suite requires an **empty** database whose name ends in `_test` and
@@ -90,3 +90,20 @@ Run `cd backend` then `uv run --offline --no-sync python -m sim.cli safety-regre
 to score all P4 safety fixtures without a provider. The component joins
 `make eval-regression` after P4 human approval is recorded in STATUS.md.
 The [safety review guide](evals/safety/README.md) lists the files requiring review.
+
+## Chat workflow (P5)
+
+The backend orchestrator now handles typed extraction, onboarding, daily question
+priority, skipped questions, corrections, and mixed-intent messages. Questions
+and state updates are controlled by code. Data questions use a bounded read-only
+tool loop; medical requests receive the fixed refusal, and emergencies bypass
+extraction. Replies pass the output guard or use a fixed fallback.
+
+Per-user transaction locks prevent duplicate processing. Budget exhaustion keeps
+the message and deterministic pending answers while rolling back analyzer-driven
+updates. Migration 0003 stores bounded conversation progress in the existing
+conversation_state table. The API and frontend chat integration remain P7 work.
+
+The cumulative P5 gate includes 25 E7 adversarial FakeLLM cases, concurrency,
+SQL tracing, privacy, context limits, and repeated-run database cleanup checks.
+E7 joins `make eval-regression` after P5 human approval is recorded in STATUS.md.

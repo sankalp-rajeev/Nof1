@@ -200,7 +200,7 @@ ollama:*: {input: 0.0, output: 0.0}
 |---|---|
 | users | id uuid pk, created_at, tz text default 'UTC', is_demo bool, data_class text ('real' or 'synthetic'), track_sleep bool default false, clock_offset_days int default 0 |
 | messages | id uuid pk, user_id fk, role ('user','assistant'), content text, client_msg_id uuid null, created_at, trace_id uuid; unique(user_id, client_msg_id) |
-| conversation_state | user_id pk fk, pending jsonb null, last_was_clarification bool default false, updated_at |
+| conversation_state | user_id pk fk, pending jsonb null, last_was_clarification bool default false, progress jsonb default '{}' (onboarding stage, local date, daily skipped questions, last suggestion date), updated_at |
 | tracked_outcomes | id, user_id fk, name, direction_better ('lower','higher'), active bool, created_at |
 | tracked_exposures | id, user_id fk, name (canonical), active bool, created_at, declined bool default false (user said no to tracking) |
 | checkins | id, user_id fk, local_date date, completed bool, checklist_answered bool, created_at, unique(user_id, local_date) |
@@ -464,6 +464,8 @@ Application rules (code):
 - Truncation order: oldest messages first, then the top-names list, then the oldest timeline rows.
 
 **ConversationState**: `pending` as listed in section 6. Exactly one pending question at a time. The next question is chosen by the F2 priority after every turn.
+
+`progress` is server-owned bounded workflow metadata, not LLM memory. It preserves onboarding stage and daily skips across requests. Daily skips reset by `today(user)` while onboarding and the last suggestion date persist. A skipped checklist is left unanswered and is not asked again that day. Empty analyzer checklist fields without an explicit yes-list or none are not an answer.
 
 **ExperimentManager**: owns the lifecycle in 7.4. On each request it advances status by `today(user)`. It runs the verdict on completion and sets the daily pending `experiment_adherence` on ON and OFF days.
 

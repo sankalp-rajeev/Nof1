@@ -12,6 +12,7 @@ from app.agent.llm.base import CallContext, LLMMessage, LLMResponse, PolicyError
 from app.agent.llm.cost import BudgetExceeded, PriceBook
 from app.agent.llm.fake import FakeLLMClient
 from app.agent.llm.router import LLMRouter
+from app.agent.prompts.loader import load_prompt
 from app.agent.tracing import SQLTraceStore
 from app.config import Settings
 from app.db.repos import Repository
@@ -84,7 +85,7 @@ def test_sql_attempt_rows_and_cross_router_global_budget(engine: Engine) -> None
         rows[0].data_class,
         rows[0].prompt_version,
         rows[0].status,
-    ) == (30, 15, "synthetic", 1, "ok")
+    ) == (30, 15, "synthetic", load_prompt("turn_analyzer").version, "ok")
     assert rows[0].latency_ms >= 0 and rows[1].status == "budget"
     assert all("synthetic note" not in row.model_dump_json() for row in rows)
     with session_scope(engine) as session:

@@ -1,6 +1,6 @@
 # STATUS
 
-CURRENT: P4
+CURRENT: P5
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -11,7 +11,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P2 | Stats engine | [x] | [x] |
 | P3 | Simulator (stats-only) and eval harness | [x] | [x] |
 | P4 | LLM infrastructure and safety | [x] | [x] |
-| P5 | Extraction, memory, chat orchestration | [ ] | [ ] |
+| P5 | Extraction, memory, chat orchestration | [x] | [ ] |
 | P6 | Experiment loop | [ ] | [ ] |
 | P7 | API and frontend | [ ] | [ ] |
 | P8 | Chat-mode simulation and live evals | [ ] | [ ] |
@@ -20,6 +20,49 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P5 Extraction, memory, and orchestration (2026-10-31)
+
+Deliverables:
+- Validate analyzer outputs and apply normalized, dated events and tracked updates.
+- Persist onboarding and daily pending progress with deterministic short answers.
+- Build bounded base/path context and a validated read-only tool loop.
+- Compose guarded replies with safety bypass, idempotency, and limited mode.
+- Add offline E7/adversarial cases and pass the cumulative P0-P5 gate.
+
+P5 implementation is complete and ready for human phase review. Focused P5 verification: 56 passed,
+including 25 E7 orchestrator cases, concurrent idempotency, SQL trace persistence,
+mixed intents, skip progress, context limits, and privacy checks. Strict mypy passes.
+
+Initial gate attempt (resolved below): `make gate PHASE=5` exited 2: 430 passed,
+3 failed. Stopped for human approval under AGENTS.md line 46 before changing any
+existing test or threshold.
+
+Two P4 trace tests hard-code prompt_version=1, while P5's changed analyzer prompt
+is correctly bumped to version=2 under AGENTS.md line 73. Failures:
+
+```text
+test_deepseek_allows_synthetic_and_traces_usage_without_text: prompt_version 2 != 1
+test_sql_attempt_rows_and_cross_router_global_budget: prompt_version 2 != 1
+test_sql_identity_prevents_forged_synthetic_context_for_real_demo:
+  duplicate user follows the preceding assertion failure before its cleanup
+430 passed, 3 failed
+```
+
+The human approved updating only those two expected-version values to
+`load_prompt("turn_analyzer").version`, preserving every other assertion. Reused
+the existing `PROMPT_NAMES, load_prompt` import in test_llm_infrastructure.py;
+added only the required import in test_llm_tracing.py. No thresholds changed.
+
+Both subsequent `make gate PHASE=5` runs passed consecutively on the same source:
+- Run 1: exit 0; 433 backend tests and 2 frontend tests passed.
+- Run 2: exit 0; 433 backend tests and 2 frontend tests passed.
+
+The local nof1_test database was empty before the runs; fixture teardown had
+already cleared the earlier leftover user. Verified empty again after both runs,
+and pytest's last-failed cache is empty. The approved stats baseline is unchanged.
+Gate outputs for both runs appear in the completion log below. P4 remains approved;
+P5 awaits human phase approval. P6 has not started.
 
 ### P0 Scaffold and tooling (2026-10-30)
 
@@ -532,3 +575,86 @@ P4 gate PASS
 ```
 
 Approved regression check: make eval-regression exited 0 with full A/N absolute gates, frozen-subset drift, and all P4 safety cases. Baseline SHA-256 is unchanged.
+
+### P5 consecutive gate completion (2026-10-31)
+
+Applied the human-approved prompt-version assertion fix, with the corrected imports.
+Ran the full gate twice consecutively without edits between runs. Both exited 0.
+Each passed lint, format, strict mypy, ESLint, TypeScript, 433 backend tests, and
+2 frontend tests. Verified the local test database and last-failed cache are empty.
+No live LLM or held-out seeds were used. The approved baseline SHA-256 remains
+`8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257`.
+
+DECISIONS.md records workflow progress, transaction boundaries and locking, context
+limits, code-owned questions, tool privileges, E7 coverage, and the approved test fix.
+Human action: review/approve P5 and explicitly authorize P6 before it starts.
+
+Gate run 1 output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 81%]
+tests\test_sim_world.py ......                                           [ 82%]
+tests\test_stats_experiment.py ......................                    [ 87%]
+tests\test_stats_panel.py ...                                            [ 88%]
+tests\test_stats_patterns.py ......................                      [ 93%]
+tests\test_stats_storage.py .......                                      [ 94%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 433 passed, 1 warning in 36.15s =======================
++ npm.cmd run test -- -t \[p[0-5]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-5]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:25:12
+   Duration  56.17s (environment 83%, setup 17%)
+
+P5 gate PASS
+```
+
+Gate run 2 output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 81%]
+tests\test_sim_world.py ......                                           [ 82%]
+tests\test_stats_experiment.py ......................                    [ 87%]
+tests\test_stats_panel.py ...                                            [ 88%]
+tests\test_stats_patterns.py ......................                      [ 93%]
+tests\test_stats_storage.py .......                                      [ 94%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 433 passed, 1 warning in 30.14s =======================
++ npm.cmd run test -- -t \[p[0-5]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-5]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:26:46
+   Duration  1.25s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P5 gate PASS
+```

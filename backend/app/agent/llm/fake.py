@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel, JsonValue, TypeAdapter
 
 from app.agent.llm.base import CallContext, LLMMessage, LLMResponse
 
@@ -17,6 +17,7 @@ class RecordedCall:
     key: str
     ctx: CallContext
     messages: tuple[LLMMessage, ...]
+    schema: dict[str, JsonValue] | None = None
 
 
 def request_key(
@@ -59,7 +60,9 @@ class FakeLLMClient:
         ctx: CallContext,
     ) -> LLMResponse:
         key = request_key(messages, schema, max_tokens, temperature, ctx.purpose)
-        self.calls.append(RecordedCall(key, ctx, tuple(messages)))
+        self.calls.append(
+            RecordedCall(key, ctx, tuple(messages), schema.model_json_schema() if schema else None)
+        )
         queue = self._replay.get(key, deque()) if self._is_replay else self._outputs
         if not queue:
             raise RuntimeError(

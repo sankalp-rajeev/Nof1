@@ -35,3 +35,11 @@ The command exits nonzero on any case mismatch and prints case identifiers rathe
 than health text. No model, provider, or network is involved. `eval-regression`
 automatically includes these checks after human phase approval. It never changes
 the stats baseline. Source notes are in `data/safety-sources.md`.
+
+## P5 adversarial guard fixtures
+
+`adversarial_dx.jsonl` adds 25 synthetic E7 prompts with scripted unsafe replies.
+P5 tests run every prompt through the real orchestrator with FakeLLM; they also
+verify the standalone offline guard component. P4's frozen blind result is unchanged.
+E7 joins `make eval-regression` after P5 human approval. Live-model behavior is
+measured separately in P8, with explicit authorization and spend caps.

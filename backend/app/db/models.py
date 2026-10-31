@@ -84,6 +84,9 @@ class ConversationState(Updated, Base):
     )
     pending: Mapped[dict[str, JsonValue] | None] = mapped_column(JSONB(none_as_null=True))
     last_was_clarification: Mapped[bool] = mapped_column(server_default=text("false"))
+    progress: Mapped[dict[str, JsonValue]] = mapped_column(
+        JSONB, server_default=text("'{}'::jsonb")
+    )
 
 
 class TrackedOutcome(Identity, Created, UserOwned, Base):

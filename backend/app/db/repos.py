@@ -40,7 +40,7 @@ class Repository:
     def _user(self, user_id: UUID, *, lock: bool = False) -> m.User:
         query = select(m.User).where(m.User.id == user_id)
         if lock:
-            query = query.with_for_update()
+            query = query.with_for_update(key_share=True)
         user = self.session.scalar(query)
         if user is None:
             raise ValueError("User not found")

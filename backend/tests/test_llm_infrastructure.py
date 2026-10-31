@@ -77,7 +77,7 @@ def test_deepseek_allows_synthetic_and_traces_usage_without_text() -> None:
         row.data_class,
         row.attempt,
         row.status,
-    ) == (9, 2, 1, "synthetic", 1, "ok")
+    ) == (9, 2, load_prompt("turn_analyzer").version, "synthetic", 1, "ok")
     assert row.cost_usd is None and row.latency_ms >= 0
     assert "Synthetic note" not in row.model_dump_json()
 

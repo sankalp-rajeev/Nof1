@@ -32,6 +32,7 @@ class Facts(BaseModel):
     phase: Literal["baseline", "on", "off"] | None = None
     washout: bool = False
     rating_scale: bool = False
+    details: dict[str, JsonValue] = {}
 
     @classmethod
     def from_payload(
@@ -46,7 +47,10 @@ class Facts(BaseModel):
             if isinstance(value, (int, float)):
                 numbers.append(Decimal(str(value)))
             elif isinstance(value, str) and DATE_RE.fullmatch(value):
-                dates.append(date.fromisoformat(value))
+                try:
+                    dates.append(date.fromisoformat(value))
+                except ValueError:
+                    pass  # Invalid date-like names never authorize a rendered date.
             elif isinstance(value, list):
                 for item in value:
                     visit(item)
@@ -58,7 +62,12 @@ class Facts(BaseModel):
             visit(value)
         if rating_scale:
             numbers.extend((Decimal(0), Decimal(10)))
-        return cls(numbers=tuple(numbers), dates=tuple(dates), rating_scale=rating_scale)
+        return cls(
+            numbers=tuple(numbers),
+            dates=tuple(dates),
+            rating_scale=rating_scale,
+            details=dict(payload),
+        )
 
 
 class OutputGuard:

@@ -97,6 +97,10 @@ def main() -> int:
             issues.extend(safety_regression())
         else:
             print("P4 safety regression pending human approval; run safety-regression for review")
+        if phase_approved(5):
+            from app.agent.evaluation import evaluate_e7
+
+            issues.extend(evaluate_e7())
         print(
             "\n".join(issues)
             if issues
