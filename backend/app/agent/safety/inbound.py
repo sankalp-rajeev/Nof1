@@ -14,6 +14,7 @@ RULES = {
         r"chest.{0,25}(?:pain|pressure|tight)",
         r"(?:pain|pressure).{0,25}chest",
         r"elephant.{0,25}(?:on|sitting on).{0,10}chest",
+        r"(?:sit|stand|press|push|crush)\w*.{0,15}(?:on|against).{0,12}chest",
     ),
     "breathing": (
         r"(?:cannot|cant|trouble|struggl\w*|difficulty).{0,18}breath\w*",
@@ -26,6 +27,9 @@ RULES = {
         r"face.{0,25}droop\w*",
         r"speech.{0,20}slurr\w*",
         r"words.{0,30}slurr\w*",
+        r"(?:words|speech).{0,25}(?:garbl|jumbl|mush|incoher)\w*",
+        r"(?:cant|cannot|unable to).{0,10}(?:feel|move|lift).{0,15}"
+        r"(?:left|right|one).{0,10}(?:arm|leg|side)",
         r"slurr\w*.{0,20}(?:speech|words)",
         r"sudden.{0,15}weak\w*",
         r"suddenly cannot raise.{0,10}arm",
@@ -35,6 +39,7 @@ RULES = {
         r"severe allergic reaction",
         r"anaphyla\w*",
         r"throat.{0,25}clos\w* up",
+        r"(?:face|lips?|mouth).{0,20}swel\w*.{0,30}(?:wheez|breath)\w*",
     ),
     "overdose": (
         r"overdos\w*",
@@ -52,6 +57,8 @@ RULES = {
         r"(?:dont|do not) want to be here anymore",
         r"(?:dont|do not) think i can keep myself safe",
         r"(?:cant|cannot) keep myself safe",
+        r"(?:everyone|people|family|friends|they).{0,25}(?:better|happier|easier)"
+        r".{0,20}(?:without me|if i (?:were|was) gone)",
     ),
     "bleeding": (
         r"bleed\w*.{0,20}sever\w*",
@@ -60,14 +67,17 @@ RULES = {
         r"blood is pouring",
         r"bleeding a lot.{0,20}faint",
         r"(?:towel|cloth|clothes).{0,15}soaked.{0,10}blood",
+        r"(?:wont|will not|cannot|cant) stop bleed\w*",
     ),
     "consciousness": (
         r"lost consciousness",
         r"passed out",
-        r"blacking out",
+        r"black(?:ed|ing)? out",
         r"unconscious",
         r"fainted.{0,20}cannot stay awake",
         r"next thing i knew.{0,25}(?:floor|ground)",
+        r"(?:meds|medication|medicine|pills?|tablets?).{0,70}"
+        r"(?:cant|cannot|unable to).{0,10}(?:stay|keep).{0,5}awake",
     ),
     "headache": (
         r"worst.{0,20}headache",
@@ -114,13 +124,27 @@ def _bounded_headache(text: str, start: int, end: int) -> bool:
     return bool(bounded and not onset)
 
 
+def _non_symptom_action(category: str, text: str, start: int, end: int) -> bool:
+    """Distinguish transitive distribution and container transport from ingestion/fainting."""
+    span, suffix = text[start:end], text[end:]
+    if category == "overdose" and span.startswith("took"):
+        return bool(re.match(r"\s+(?:to|back to|into)\s+(?:the|a|an|my|our)\b", suffix))
+    if category == "consciousness" and span == "passed out":
+        return bool(re.match(r"\s+(?:the|some|these|those|our|my|your)\s+\w+s\b", suffix))
+    return False
+
+
 def inbound_safety(text: str, *, possible_emergency: bool = False) -> InboundResult:
     normalized = unicodedata.normalize("NFKC", text).casefold().replace("’", "'").replace("'", "")
     for category, expressions in RULES.items():
         for expression in expressions:
             for match in re.finditer(expression, normalized):
-                if not _negated(normalized, match.start()) and not (
-                    category == "headache" and _bounded_headache(normalized, *match.span())
+                if (
+                    not _negated(normalized, match.start())
+                    and not (
+                        category == "headache" and _bounded_headache(normalized, *match.span())
+                    )
+                    and not _non_symptom_action(category, normalized, *match.span())
                 ):
                     return InboundResult(True, category, "rule")
     words = list(re.finditer(r"[a-z]+", normalized))

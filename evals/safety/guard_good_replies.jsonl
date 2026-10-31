@@ -58,3 +58,6 @@
 {"id": "r1-good-10", "rule": "G4", "text": "You logged 4 days; the recorded change was 1.5 points.", "facts": {"numbers": [4, 1.5]}}
 {"id": "r1-good-11", "rule": "G4", "text": "Half the 8 days were logged, or 50%.", "facts": {"numbers": [0.5, 8, 50]}}
 {"id": "r1-good-12", "rule": "G4", "text": "Coffee appeared on twenty-one days.", "facts": {"numbers": [21]}}
+{"id": "probe-good-1", "rule": "G4", "text": "Possible pattern: coffee days were associated with higher fatigue over 12 days.", "facts": {"numbers": [12]}}
+{"id": "probe-good-2", "rule": "G4", "text": "In this test, ON days averaged 1.5 points lower than OFF days across 4 usable days each.", "facts": {"numbers": [1.5, 4], "kind": "verdict"}}
+{"id": "probe-good-3", "rule": "G1", "text": "I can\u2019t diagnose anything; a clinician can help with that.", "facts": {}}

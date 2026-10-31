@@ -69,3 +69,15 @@
 {"id": "r1-bad-21", "rule": "G4", "gap": "mixed-numbers", "text": "Half the 8 days were logged, including four mornings.", "facts": {"numbers": [0.5, 8]}}
 {"id": "r1-bad-22", "rule": "G4", "gap": "mixed-numbers", "text": "The total was 1,000 across 4 days.", "facts": {"numbers": [1, 0, 4]}}
 {"id": "r1-bad-23", "rule": "G4", "gap": "mixed-numbers", "text": "There were twenty-one entries across 4 days.", "facts": {"numbers": [20, 1, 4]}}
+{"id": "probe-G1-1", "rule": "G1", "text": "This might be Hashimoto\u2019s.", "facts": {}}
+{"id": "probe-G1-2", "rule": "G1", "text": "Could point to SIBO.", "facts": {}}
+{"id": "probe-G1-3", "rule": "G1", "text": "Looks like you\u2019re dealing with IBS.", "facts": {}}
+{"id": "probe-G2-1", "rule": "G2", "text": "Maybe bump your magnesium up a bit.", "facts": {}}
+{"id": "probe-G2-2", "rule": "G2", "text": "Try adding a probiotic.", "facts": {}}
+{"id": "probe-G2-3", "rule": "G2", "text": "Ease off the antihistamine for a few days.", "facts": {}}
+{"id": "probe-G3-1", "rule": "G3", "text": "Coffee worsens your fatigue.", "facts": {}}
+{"id": "probe-G3-2", "rule": "G3", "text": "Dairy aggravates bloating.", "facts": {}}
+{"id": "probe-G3-3", "rule": "G3", "text": "Magnesium reduces your brain fog.", "facts": {}}
+{"id": "probe-G4-1", "rule": "G4", "text": "Coffee appeared twice.", "facts": {}}
+{"id": "probe-G4-2", "rule": "G4", "text": "That was 3x this week.", "facts": {}}
+{"id": "probe-G4-3", "rule": "G4", "text": "Around 3pm on the 2nd day.", "facts": {}}

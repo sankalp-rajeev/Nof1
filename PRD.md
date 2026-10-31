@@ -513,6 +513,8 @@ Files in `agent/prompts/` with frontmatter `version: N`: `turn_analyzer.md`, `co
 - G6 length: check-in replies at most 120 words.
 - Footer: code appends a fixed non-medical-advice sentence to insight and verdict messages after the guard (not LLM generated).
 
+Blind-probe clarifications: G1 also blocks diagnostic assertion frames when a condition name is absent from the vocabulary; an explicit first-person refusal or inability to diagnose is allowed, without exempting other claims. G2 includes soft dose adjustments and supplement classes. G3 includes inflections of worsen, aggravate, reduce, increase, decrease, improve, and relieve; only the specified past-tense verdict wording is whitelisted. G4 includes frequency words such as twice and thrice. G5 constrains current experiment instructions; a verdict with no current scheduled phase may compare historical ON/OFF labels.
+
 On violation: regenerate once with the violation list in the prompt, else fall back to a deterministic template built from FACTS. Templates are code; a test asserts every template renders only numbers present in its FACTS. Track regen and fallback rates.
 
 **Allowed wording**: observational: "possible pattern", "worth testing", "associated with". Verdict: "in this test" plus the sample size and one limitation sentence. Never "proves", "confirms", "you have".

@@ -26,6 +26,8 @@ NUMBER_WORDS = {
     "twenty": 20,
     "dozen": 12,
     "half": 0.5,
+    "twice": 2,
+    "thrice": 3,
 }
 MEDICINE_WORDS = (
     "medication",
@@ -44,4 +46,8 @@ MEDICINE_WORDS = (
     "aspirin",
     "ibuprofen",
     "antihistamine",
+    "vitamin",
+    "mineral",
+    "probiotic",
+    "prebiotic",
 )

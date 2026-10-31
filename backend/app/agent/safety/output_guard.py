@@ -82,7 +82,10 @@ class OutputGuard:
         violations: list[str] = []
         lowered = text.casefold().replace("’", "'")
         sentences = re.split(r"(?<!\d)[.!?]+\s*|(?<=\d)[!?]+\s*", lowered)
-        if re.search(r"\bdiagnos(?:is|ed|e)\b", lowered) or any(
+        non_refusal = re.sub(
+            r"\bi\s+(?:cannot|can't|can not|am unable to|do not|don't)\s+diagnose\b", "", lowered
+        )
+        if re.search(r"\bdiagnos(?:is|ed|e)\b", non_refusal) or any(
             self._diagnosis(sentence) for sentence in sentences
         ):
             violations.append("G1")
@@ -90,13 +93,7 @@ class OutputGuard:
             violations.append("G2")
         names = self.names | {name.casefold() for name in (*facts.exposures, *facts.outcomes)}
         if re.search(r"\b(?:proves|confirms)\b", lowered) or any(
-            re.search(
-                r"\b(?:causes|caused|because of|due to|leads to|triggers?|triggered|"
-                r"making|driving|behind|responsible for)\b",
-                sentence,
-            )
-            and any(re.search(r"\b" + re.escape(name) + r"\b", sentence) for name in names)
-            for sentence in sentences
+            self._causal(sentence, facts, names) for sentence in sentences
         ):
             violations.append("G3")
         if self._invented_number(text, facts):
@@ -107,7 +104,35 @@ class OutputGuard:
             violations.append("G6")
         return tuple(violations)
 
+    @staticmethod
+    def _causal(sentence: str, facts: Facts, names: set[str]) -> bool:
+        # Only the specified past-tense verdict wording is whitelisted.
+        checked = (
+            re.sub(r"\bworsened\b", "", sentence)
+            if facts.kind == "verdict" and "in this test" in sentence
+            else sentence
+        )
+        return bool(
+            re.search(
+                r"\b(?:causes|caused|because of|due to|leads to|triggers?|triggered|"
+                r"making|driving|behind|responsible for|worsen(?:s|ed|ing)?|"
+                r"aggravat(?:e[sd]?|ing)|reduc(?:e[sd]?|ing)|"
+                r"increas(?:e[sd]?|ing)|decreas(?:e[sd]?|ing)|"
+                r"improv(?:e[sd]?|ing)|reliev(?:e[sd]?|ing))\b",
+                checked,
+            )
+            and any(re.search(r"\b" + re.escape(name) + r"\b", sentence) for name in names)
+        )
+
     def _diagnosis(self, sentence: str) -> bool:
+        # Diagnostic assertions are unsafe even for names absent from the vocabulary.
+        if re.search(
+            r"\b(?:(?:this|it|that)\s+(?:may|might|could)\s+be|"
+            r"(?:could|may|might)\s+point\s+to|"
+            r"looks? like you(?:'re| are)\s+(?:dealing|living)\s+with)\b",
+            sentence,
+        ):
+            return True
         if re.search(r"\byou\s+(?:probably|likely|may|might)\s+have\b", sentence):
             return True
         has_condition = any(
@@ -128,7 +153,7 @@ class OutputGuard:
     def _directive(self, sentence: str) -> bool:
         for match in re.finditer(
             r"\b(?:take|start|stop|increase|decrease|raise|lower|switch|lowering|raising|"
-            r"try|add|adding|cut back on)\b",
+            r"try|add|adding|cut back on|bump|boost|taper|reduce|ease (?:off|up)(?: on)?)\b",
             sentence,
         ):
             prefix = sentence[: match.start()]
@@ -188,6 +213,8 @@ class OutputGuard:
     @staticmethod
     def _schedule(text: str, facts: Facts) -> bool:
         labels = PHASE_RE.findall(text)
+        if facts.kind == "verdict" and facts.phase is None:
+            return True  # Historical phase comparisons are not today's instructions.
         if facts.phase is None:
             return not labels
         if labels != [facts.phase.upper()]:

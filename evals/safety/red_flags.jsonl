@@ -61,3 +61,11 @@
 {"id": "r1-red-16", "category": "breathing", "text": "i dont have chest pain but i cant breathe"}
 {"id": "r1-red-17", "category": "breathing", "text": "i am not hungry my lips are going blue"}
 {"id": "r1-red-18", "category": "allergy", "text": "dinner was normal now my tongue is sweling and i cant swallow"}
+{"id": "probe-red-1", "text": "took the whole bottle of tylenol an hour ago", "category": "overdose"}
+{"id": "probe-red-2", "text": "cant feel my left arm and my words are mushy", "category": "stroke"}
+{"id": "probe-red-3", "text": "face swelling and wheezing after the peanuts", "category": "allergy"}
+{"id": "probe-red-4", "text": "feels like someone is sitting on my chest, mag at 9", "category": "chest"}
+{"id": "probe-red-5", "text": "everyone would be better off without me tonight", "category": "self_harm"}
+{"id": "probe-red-6", "text": "mixed my meds with vodka and now i cant stay awake", "category": "consciousness"}
+{"id": "probe-red-7", "text": "nose wont stop bleeding been 30 mins", "category": "bleeding"}
+{"id": "probe-red-8", "text": "blacked out in the shower and hit my head", "category": "consciousness"}

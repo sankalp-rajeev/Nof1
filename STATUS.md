@@ -10,7 +10,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P1 | Domain and storage | [x] | [x] |
 | P2 | Stats engine | [x] | [x] |
 | P3 | Simulator (stats-only) and eval harness | [x] | [x] |
-| P4 | LLM infrastructure and safety | [x] | [ ] |
+| P4 | LLM infrastructure and safety | [x] | [x] |
 | P5 | Extraction, memory, chat orchestration | [ ] | [ ] |
 | P6 | Experiment loop | [ ] | [ ] |
 | P7 | API and frontend | [ ] | [ ] |
@@ -476,3 +476,59 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
 
 P4 gate PASS
 ```
+
+### P4 blind probes and approval (2026-10-31)
+
+Human reviewed the 77 additions and conditionally approved P4 subject to one blind
+probe run. Executed exactly once against e7bdf55 before code changes. Frozen results
+are in evals/safety/probe-run.json; subsequent runs are regression checks only.
+
+- red_flags.jsonl: 1 pass / 7 fail; failed: probe-red-2, probe-red-3, probe-red-4, probe-red-5, probe-red-6, probe-red-7, probe-red-8.
+- benign.jsonl: 6 pass / 2 fail; failed: probe-benign-4, probe-benign-5.
+- guard_bad_replies.jsonl: 2 pass / 10 fail; failed: probe-G1-1, probe-G1-2, probe-G1-3, probe-G2-1, probe-G2-2, probe-G2-3, probe-G3-1, probe-G3-2, probe-G3-3, probe-G4-1.
+- guard_good_replies.jsonl: 1 pass / 2 fail; failed: probe-good-2, probe-good-3.
+
+Generalized rules and independent paraphrase tests now pass. Appended all 31
+probes as probe-* fixtures. No existing test, threshold, or baseline changed.
+Updated PRD 8.6 and logged the blind record, generalizations, and probe contract
+clarifications in DECISIONS.md. The approved stats baseline remains unchanged.
+
+Gate: make gate PHASE=4 exited 0; 377 backend tests and 2 frontend tests passed.
+Human approval: approved per the explicit conditional instruction; P5 is authorized.
+
+Gate output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 78%]
+tests\test_sim_world.py ......                                           [ 79%]
+tests\test_stats_experiment.py ......................                    [ 85%]
+tests\test_stats_panel.py ...                                            [ 86%]
+tests\test_stats_patterns.py ......................                      [ 92%]
+tests\test_stats_storage.py .......                                      [ 94%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 377 passed, 1 warning in 24.43s =======================
++ npm.cmd run test -- -t \[p[0-4]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-4]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  12:37:20
+   Duration  1.32s (environment 74%, setup 16%, tests 8%, transform 1%, worker 1%)
+
+P4 gate PASS
+```
+
+Approved regression check: make eval-regression exited 0 with full A/N absolute gates, frozen-subset drift, and all P4 safety cases. Baseline SHA-256 is unchanged.
