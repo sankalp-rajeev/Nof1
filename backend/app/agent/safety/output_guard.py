@@ -18,7 +18,7 @@ from app.config import ROOT
 from app.domain.normalize import load_aliases
 
 DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
-NUMERAL_RE = re.compile(r"[-+]?(?:\d+(?:\.\d+)?|\.\d+)%?")
+NUMERAL_RE = re.compile(r"[-+]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)%?")
 PHASE_RE = re.compile(r"\b(?:BASELINE|ON|OFF)\b")
 
 
@@ -90,7 +90,11 @@ class OutputGuard:
             violations.append("G2")
         names = self.names | {name.casefold() for name in (*facts.exposures, *facts.outcomes)}
         if re.search(r"\b(?:proves|confirms)\b", lowered) or any(
-            re.search(r"\b(?:causes|caused|because of|due to|leads to)\b", sentence)
+            re.search(
+                r"\b(?:causes|caused|because of|due to|leads to|triggers?|triggered|"
+                r"making|driving|behind|responsible for)\b",
+                sentence,
+            )
             and any(re.search(r"\b" + re.escape(name) + r"\b", sentence) for name in names)
             for sentence in sentences
         ):
@@ -106,24 +110,33 @@ class OutputGuard:
     def _diagnosis(self, sentence: str) -> bool:
         if re.search(r"\byou\s+(?:probably|likely|may|might)\s+have\b", sentence):
             return True
+        has_condition = any(
+            re.search(r"\b" + re.escape(condition) + r"\b", sentence)
+            for condition in self.conditions
+        )
+        if has_condition and re.search(
+            r"\b(?:sounds? like|consistent with|could be|may be|might be|"
+            r"you (?:reported|said|mentioned|told me)|your (?:doctor|clinician)|"
+            r"your reported condition)\b",
+            sentence,
+        ):
+            return True
         has_you = re.search(r"\byou(?:'ve)?\b", sentence)
         has_verb = re.search(r"\b(?:have|got|suffer\w*)\b", sentence)
-        return bool(
-            has_you
-            and has_verb
-            and any(
-                re.search(r"\b" + re.escape(condition) + r"\b", sentence)
-                for condition in self.conditions
-            )
-        )
+        return bool(has_you and has_verb and has_condition)
 
     def _directive(self, sentence: str) -> bool:
         for match in re.finditer(
-            r"\b(?:take|start|stop|increase|decrease|raise|lower|switch|lowering|raising)\b",
+            r"\b(?:take|start|stop|increase|decrease|raise|lower|switch|lowering|raising|"
+            r"try|add|adding|cut back on)\b",
             sentence,
         ):
             prefix = sentence[: match.start()]
-            if re.search(r"\b(?:used to|reported|said)\s+(?:you\s+)?$", prefix):
+            if re.search(
+                r"\b(?:used to|reported|said|notes say|record says|wrote)\s+"
+                r"(?:that\s+)?(?:you\s+)?$",
+                prefix,
+            ):
                 continue
             window = sentence[
                 max(0, match.start() - DIRECTIVE_WINDOW) : match.end() + DIRECTIVE_WINDOW
@@ -150,8 +163,18 @@ class OutputGuard:
         if facts.rating_scale:
             allowed.update((Decimal(0), Decimal(10)))
         for match in NUMERAL_RE.finditer(remaining):
-            if Decimal(match.group().rstrip("%")) not in allowed:
+            if Decimal(match.group().rstrip("%").replace(",", "")) not in allowed:
                 return True
+        # Treat a compound as a single value; allowing 20 and 1 cannot authorize 21.
+        for match in re.finditer(
+            r"\btwenty[ -]+(one|two|three|four|five|six|seven|eight|nine)\b", remaining
+        ):
+            unit = 1 if match[1] == "one" else NUMBER_WORDS[match[1]]
+            if Decimal(20 + unit) not in allowed:
+                return True
+        remaining = re.sub(
+            r"\btwenty[ -]+(?:one|two|three|four|five|six|seven|eight|nine)\b", "", remaining
+        )
         for word, value in NUMBER_WORDS.items():
             if re.search(r"\b" + word + r"\b", remaining) and Decimal(str(value)) not in allowed:
                 return True

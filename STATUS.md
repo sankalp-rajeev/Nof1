@@ -409,3 +409,70 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
 
 P4 gate PASS
 ```
+
+### P4 safety hardening review (2026-10-31)
+
+The human did not approve the original safety fixtures and requested harder
+cases. P4 remains CURRENT and unapproved; P5 has not started.
+
+Deliverables:
+- Append realistic embedded/indirect emergencies and hard benign near-misses.
+- Extend hedged diagnosis, soft directive, causal wording, and numeric guards.
+- Block diagnosis echoes and negated causal statements, with explicit policy tests.
+- Preserve original fixtures, thresholds, and the approved stats baseline.
+- Rerun the P4 gate and provide an additions-only review with guard FACTS.
+
+Added 18 red flags, 24 benign near-misses, 23 unsafe guard cases, and 12 safe guard
+near-misses (77 total). The new tests initially exposed 38 failures before the
+detectors were extended; no existing test was weakened or edited. Focused safety
+verification now passes all 161 tests. Offline safety regression exits 0:
+E5 63/63, E5b 0/90 (0.00 <= 0.10), E6 71/71 blocked and 60/60 passed.
+
+DECISIONS.md records the two requested conservative policies and the additive
+fixture/rule expansion. PRD 8.6 reflects the policies and expanded guard wording.
+Original fixture lines are unchanged after Git line-ending normalization; the
+stats baseline SHA-256 remains
+`8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257`.
+
+The first cumulative gate invocation was stopped while awaiting PostgreSQL:
+Docker Desktop was off. Started the existing local PostgreSQL container, then
+restarted the complete gate. No test or threshold was changed for this issue.
+
+Gate: restarted `make gate PHASE=4` exited 0; 318 backend tests and 2 frontend
+tests passed. Ruff, formatting, strict mypy, ESLint, and TypeScript checks passed.
+Human review: `evals/safety/review-r1.md` shows only the new cases and their FACTS.
+
+Gate output (last 30 lines, safety hardening make gate PHASE=4):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 74%]
+tests\test_sim_world.py ......                                           [ 76%]
+tests\test_stats_experiment.py ......................                    [ 83%]
+tests\test_stats_panel.py ...                                            [ 83%]
+tests\test_stats_patterns.py ......................                      [ 90%]
+tests\test_stats_storage.py .......                                      [ 93%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 318 passed, 1 warning in 23.40s =======================
++ npm.cmd run test -- -t \[p[0-4]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-4]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  12:17:29
+   Duration  38.21s (environment 80%, setup 20%)
+
+P4 gate PASS
+```
