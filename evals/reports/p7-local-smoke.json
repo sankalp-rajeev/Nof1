@@ -1,0 +1,18 @@
+{
+  "proxy_api": "pass",
+  "demo_load_idempotent": true,
+  "phases_checked": [
+    "baseline",
+    "on",
+    "off"
+  ],
+  "days_upsert_same_id": true,
+  "future_date_status": 422,
+  "terminal_status": 409,
+  "verdict_immutable": true,
+  "verdict_label": "helped",
+  "n_on": 4,
+  "n_off": 4,
+  "llm_calls": 0,
+  "delete_and_cleanup": true
+}

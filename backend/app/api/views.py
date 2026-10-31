@@ -1,7 +1,7 @@
 """JSON views of user-scoped records and logical experiment days."""
 
 from collections.abc import Iterable
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -9,6 +9,9 @@ from pydantic import JsonValue, TypeAdapter
 from sqlalchemy import select
 
 from app.agent.experiment_manager import PROTOCOL, ExperimentManager
+from app.agent.pending import question_text
+from app.agent.progress import load_progress
+from app.agent.safety.templates import ESCALATION
 from app.api.runtime import Runtime
 from app.config import EXPERIMENT_LIMITATION
 from app.db import models as m
@@ -28,6 +31,42 @@ def row_json(row: m.Base) -> dict[str, JsonValue]:
     )
 
 
+def chat_view(repo: Repository, user_id: UUID, reply: m.Message) -> dict[str, JsonValue]:
+    saved = reply.response_payload or {}
+    if "reply" in saved:
+        return saved
+    metadata = saved.get("_result", {})
+    assert isinstance(metadata, dict)
+    message_id = repo.session.scalar(
+        select(m.Message.id).where(
+            m.Message.user_id == user_id,
+            m.Message.trace_id == reply.trace_id,
+            m.Message.role == "user",
+        )
+    )
+    events: list[JsonValue] = [
+        row_json(row)
+        for row in repo.session.scalars(
+            select(m.Event).where(m.Event.user_id == user_id, m.Event.message_id == message_id)
+        )
+    ]
+    pending = repo.get_state(user_id).pending
+    payload: dict[str, JsonValue] = {
+        "reply": reply.content,
+        "trace_id": str(reply.trace_id),
+        "events_logged": events,
+        "pending_question": metadata.get(
+            "pending_question", question_text(pending) if pending else None
+        ),
+        "limited_mode": metadata.get("limited_mode", False),
+        "safety": {"red_flag": reply.content == ESCALATION},
+        "new_insight": metadata.get("new_insight"),
+        "experiment_prompt": metadata.get("experiment_prompt"),
+    }
+    reply.response_payload = payload
+    return payload
+
+
 def tracking_view(repo: Repository, user_id: UUID, runtime: Runtime) -> dict[str, JsonValue]:
     user = repo._user(user_id)
     result = repo.get_tracking(user_id).model_dump(mode="json")
@@ -39,6 +78,39 @@ def tracking_view(repo: Repository, user_id: UUID, runtime: Runtime) -> dict[str
         }
     )
     return JSON.validate_python(result)
+
+
+def timeline_view(
+    repo: Repository, user_id: UUID, runtime: Runtime, days: int = 14
+) -> dict[str, JsonValue]:
+    day = today(repo._user(user_id), now=runtime.clock())
+    start = day - timedelta(days=days - 1)
+    events = repo.latest_events(user_id, start, day)
+    ratings = repo.list_ratings(user_id, start, day)
+    checkins = {
+        row.local_date: row
+        for row in repo.session.scalars(
+            select(m.Checkin).where(
+                m.Checkin.user_id == user_id,
+                m.Checkin.local_date >= start,
+                m.Checkin.local_date <= day,
+            )
+        )
+    }
+    output: list[JsonValue] = []
+    for index in range(days):
+        current = start + timedelta(days=index)
+        checkin = checkins.get(current)
+        output.append(
+            {
+                "date": current.isoformat(),
+                "events": [row_json(row) for row in events if row.local_date == current],
+                "ratings": [row_json(row) for row in ratings if row.local_date == current],
+                "checklist_answered": bool(checkin and checkin.checklist_answered),
+                "completed": bool(checkin and checkin.completed),
+            }
+        )
+    return {"today": day.isoformat(), "days": output}
 
 
 def experiment_view(
@@ -103,7 +175,8 @@ def experiment_view(
 
 
 def insights_view(repo: Repository, user_id: UUID, runtime: Runtime) -> list[JsonValue]:
-    latest = repo.session.scalar(
+    progress, _ = load_progress(repo, user_id, today(repo._user(user_id), now=runtime.clock()))
+    latest = progress.latest_run_id or repo.session.scalar(
         select(m.Pattern.run_id)
         .where(m.Pattern.user_id == user_id)
         .order_by(m.Pattern.computed_at.desc())

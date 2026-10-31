@@ -1,0 +1,20 @@
+{
+  "text_contrast_ratios": {
+    "body": 10.64,
+    "secondary": 6.27,
+    "primary_button": 9.2,
+    "urgent": 10.14,
+    "banner": 9.23,
+    "verdict": 10.25,
+    "error": 9.29,
+    "confounder": 7.98,
+    "secondary_on_message": 5.91,
+    "heading_accent": 5.91,
+    "placeholder": 6.29,
+    "outline_hover": 9.61
+  },
+  "minimum_text_ratio": 5.91,
+  "control_boundary_ratio": 3.88,
+  "aa_text_threshold": 4.5,
+  "aa_control_threshold": 3
+}

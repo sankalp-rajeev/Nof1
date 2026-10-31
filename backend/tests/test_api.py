@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -102,6 +103,8 @@ def test_demo_advances_to_verdict_with_no_llm(client: TestClient, engine: Engine
     assert accepted.json()["experiment"]["started_on"] == "2026-02-15"
     step = client.post("/api/demo/advance", json={"days": 1})
     assert step.status_code == 200, step.text
+    assert step.json()["timeline"]["today"] == step.json()["today"]
+    assert isinstance(step.json()["insights"], list)
     current = client.get("/api/experiments/current").json()
     assert current["today_plan"]["phase"] == "baseline"
     assert current["today"] == "2026-02-15"
@@ -134,10 +137,21 @@ def test_days_upsert_validation_terminal_and_user_scope(client: TestClient, engi
         == 422
     )
     client.post("/api/demo/advance", json={"days": 1})
+    # A valid scheduled row may need recreating, not just updating.
+    with Session(engine) as session, session.begin():
+        scheduled = session.scalar(
+            select(m.ExperimentDay).where(
+                m.ExperimentDay.experiment_id == UUID(id),
+                m.ExperimentDay.date == datetime(2026, 2, 15).date(),
+            )
+        )
+        assert scheduled is not None
+        session.delete(scheduled)
     first = client.put(future, json={"adherence": False, "outcome_value": 6})
     assert first.status_code == 200, first.text
     second = client.put(future, json={"adherence": True, "outcome_value": 5})
     assert second.status_code == 200 and second.json()["id"] == first.json()["id"]
+    assert second.json()["adherence"] is None  # Baseline has no adherence question.
     assert client.put(future, json={"adherence": True, "outcome_value": 11}).status_code == 422
     assert client.put(future, json={"adherence": "true"}).status_code == 422
     client.post("/api/demo/advance", json={"days": 13})
@@ -232,3 +246,55 @@ def test_red_flag_chat_never_calls_the_llm_and_error_inputs_are_scoped(client: T
     assert client.get("/api/messages").json()[-1]["red_flag"]
     assert client.post("/api/demo/advance", json={"days": 15}).status_code == 422
     assert client.post("/api/experiments", json={"exposure": "antihistamine"}).status_code == 400
+
+
+def test_concurrent_limited_chat_replays_exact_original_metadata(client: TestClient) -> None:
+    client.get("/api/tracking")
+    client.app.state.runtime.router.settings.max_total_tokens = 1
+    body = {"message": "ordinary synthetic note", "tz": "UTC", "client_msg_id": str(uuid4())}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: client.post("/api/chat", json=body), range(2)))
+    assert all(result.status_code == 200 for result in results)
+    assert results[0].json() == results[1].json()
+    assert results[0].json()["limited_mode"] is True
+    assert len(client.get("/api/messages").json()) == 2
+
+
+def test_abandon_and_debug_access_are_user_scoped(client: TestClient, engine: Engine) -> None:
+    load(client)
+    target = client.get("/api/insights").json()[0]
+    experiment = client.post("/api/experiments", json={"pattern_id": target["id"]}).json()[
+        "experiment"
+    ]
+    response = client.post(f"/api/experiments/{experiment['id']}/abandon")
+    assert response.status_code == 200 and response.json()["experiment"]["status"] == "abandoned"
+    settings = Settings(_env_file=None, app_env="test", debug=True)
+    with TestClient(create_app(settings=settings, engine=engine, clock=lambda: NOW)) as debug:
+        debug.cookies.update(client.cookies)
+        assert debug.get("/api/debug/llm_calls").json() == []
+    assert client.post(f"/api/experiments/{uuid4()}/abandon").status_code == 404
+
+
+def test_health_and_lifespan_do_not_initialize_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden() -> None:
+        raise AssertionError("Health must not load runtime settings")
+
+    monkeypatch.setattr("app.api.runtime.Settings", forbidden)
+    with TestClient(create_app()) as client:
+        assert client.get("/health").json() == {"status": "ok"}
+        assert not client.cookies
+
+
+def test_empty_latest_scan_does_not_serve_stale_patterns(
+    client: TestClient, engine: Engine
+) -> None:
+    load(client)
+    assert client.get("/api/insights").json()
+    uid = UUID(client.cookies["nof1_uid"])
+    with Session(engine) as session, session.begin():
+        state = session.get(m.ConversationState, uid)
+        assert state is not None
+        state.progress = {**state.progress, "latest_run_id": str(uuid4())}
+    assert client.get("/api/insights").json() == []

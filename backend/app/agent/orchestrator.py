@@ -48,7 +48,7 @@ from app.agent.pending import (
 from app.agent.progress import Progress, load_progress, save_progress
 from app.agent.receipts import PersistenceReceipts
 from app.agent.safety.inbound import inbound_safety
-from app.agent.safety.output_guard import Facts
+from app.agent.safety.output_guard import Facts, OutputGuard
 from app.agent.safety.templates import ESCALATION, MEDICAL_REFUSAL
 from app.agent.tool_loop import run_readonly_loop
 from app.agent.tools.registry import ToolRegistry
@@ -521,9 +521,24 @@ class Orchestrator:
         tool_calls: int = 0,
         limited: bool = False,
     ) -> ChatResult:
-        repo.add_message(
+        reply = repo.add_message(
             user_id, MessageInput(role="assistant", content=result.text, trace_id=trace_id)
         )
+        # Persist replay metadata before another turn can change pending state.
+        pending = repo.get_state(user_id).pending
+        hint = question_text(pending) if pending else None
+        if hint and OutputGuard().check(hint, build_facts(result.facts.details, pending)):
+            hint = None
+        reply.response_payload = {
+            "_result": {
+                "limited_mode": limited,
+                "pending_question": hint,
+                "new_insight": result.facts.details if result.facts.kind == "insight" else None,
+                "experiment_prompt": result.facts.details
+                if result.facts.kind in {"experiment", "protocol", "verdict"}
+                else None,
+            }
+        }
         return ChatResult(
             result.text,
             trace_id,

@@ -71,7 +71,7 @@ class ConfiguredCORS:
         self.app, self.runtime = app, runtime
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope.get("path") == "/health":
+        if scope["type"] != "http" or scope.get("path") == "/health":
             await self.app(scope, receive, send)
             return
         cors = CORSMiddleware(

@@ -1,7 +1,7 @@
 """Scoped API entry point. Health performs no database, configuration or LLM I/O."""
 
 from collections.abc import Callable
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from uuid import UUID
 
 from fastapi import FastAPI, Query, Request
@@ -14,20 +14,27 @@ from starlette.exceptions import HTTPException
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.responses import JSONResponse, Response
 
-from app.agent.experiment_manager import ExperimentError, ExperimentManager
+from app.agent.experiment_manager import PROTOCOL, ExperimentError, ExperimentManager
 from app.agent.llm.router import LLMRouter
 from app.agent.orchestrator import Orchestrator
-from app.agent.pending import question_text
 from app.agent.safety.templates import ESCALATION
 from app.api.demo import advance_demo, load_demo
 from app.api.runtime import ConfiguredCORS, Runtime, utc_now
 from app.api.schemas import AdvanceInput, ChatInput, DayInput, ProposalInput
-from app.api.views import experiment_view, insights_view, row_json, tracking_view
+from app.api.views import (
+    chat_view,
+    experiment_view,
+    insights_view,
+    row_json,
+    timeline_view,
+    tracking_view,
+)
 from app.config import Settings
 from app.db import models as m
 from app.db.repos import Repository
 from app.domain.clock import today
 from app.domain.schemas import UserInput
+from app.stats.experiment import schedule
 
 
 def failure(code: str, message: str, status: int) -> JSONResponse:
@@ -143,7 +150,7 @@ def create_app(
                     )
                 )
                 if stored is not None and stored.response_payload is not None:
-                    return stored.response_payload
+                    return chat_view(repo, uid, stored)
             user = repo._user(uid, lock=True)
             previous_day = today(user, now=runtime.clock())
             user.tz = body.tz
@@ -163,76 +170,14 @@ def create_app(
                 )
             )
             assert reply is not None
-            if reply.response_payload is not None:
-                return reply.response_payload
-            user_message = session.scalar(
-                select(m.Message.id).where(
-                    m.Message.user_id == uid,
-                    m.Message.trace_id == result.trace_id,
-                    m.Message.role == "user",
-                )
-            )
-            events: list[JsonValue] = [
-                row_json(row)
-                for row in session.scalars(
-                    select(m.Event).where(
-                        m.Event.user_id == uid, m.Event.message_id == user_message
-                    )
-                )
-            ]
-            pending = repo.get_state(uid).pending
-            payload: dict[str, JsonValue] = {
-                "reply": result.reply,
-                "events_logged": events,
-                "pending_question": question_text(pending) if pending else None,
-                "safety": {"red_flag": result.reply == ESCALATION},
-                "new_insight": result.facts.details
-                if result.facts and result.facts.kind == "insight"
-                else None,
-                "experiment_prompt": result.facts.details
-                if result.facts and result.facts.kind in {"experiment", "protocol", "verdict"}
-                else None,
-                "limited_mode": result.limited,
-                "trace_id": str(result.trace_id),
-            }
-            reply.response_payload = payload
-            return payload
+            return chat_view(repo, uid, reply)
 
     @app.get("/api/timeline")
     def timeline(
         request: Request, days: int = Query(default=30, ge=1, le=365)
     ) -> dict[str, JsonValue]:
         with Session(runtime.engine) as session:
-            repo = Repository(session)
-            uid = request.state.user_id
-            day = today(repo._user(uid), now=runtime.clock())
-            start = day - timedelta(days=days - 1)
-            events = repo.latest_events(uid, start, day)
-            ratings = repo.list_ratings(uid, start, day)
-            checkins = {
-                row.local_date: row
-                for row in session.scalars(
-                    select(m.Checkin).where(
-                        m.Checkin.user_id == uid,
-                        m.Checkin.local_date >= start,
-                        m.Checkin.local_date <= day,
-                    )
-                )
-            }
-            output: list[JsonValue] = []
-            for index in range(days):
-                current = start + timedelta(days=index)
-                checkin = checkins.get(current)
-                output.append(
-                    {
-                        "date": current.isoformat(),
-                        "events": [row_json(row) for row in events if row.local_date == current],
-                        "ratings": [row_json(row) for row in ratings if row.local_date == current],
-                        "checklist_answered": bool(checkin and checkin.checklist_answered),
-                        "completed": bool(checkin and checkin.completed),
-                    }
-                )
-            return {"today": day.isoformat(), "days": output}
+            return timeline_view(Repository(session), request.state.user_id, runtime, days)
 
     @app.get("/api/insights")
     def insights(request: Request) -> list[JsonValue]:
@@ -296,13 +241,38 @@ def create_app(
                     m.ExperimentDay.experiment_id == id, m.ExperimentDay.date == day
                 )
             )
-            if day > manager.day() or plan is None:
+            expected = (
+                next(
+                    (
+                        item
+                        for item in schedule(PROTOCOL.validate_python(row.protocol))
+                        if item.date == day
+                    ),
+                    None,
+                )
+                if row.started_on
+                else None
+            )
+            if day > manager.day() or expected is None:
                 raise ExperimentError(
                     "invalid_date", "Choose a scheduled date on or before today.", 422
                 )
-            return row_json(
-                manager.record_day(id, day, body.adherence, outcome_value=body.outcome_value)
+            if plan is None:
+                plan = m.ExperimentDay(
+                    experiment_id=id, date=day, phase=expected.phase, washout=expected.washout
+                )
+                session.add(plan)
+                session.flush()
+            saved = manager.record_day(
+                id,
+                day,
+                None if plan.phase == "baseline" else body.adherence,
+                outcome_value=body.outcome_value,
             )
+            tracked = {row.name for row in repo.get_tracking(uid).outcomes}
+            rated = {row.outcome_name for row in repo.list_ratings(uid, day, day)}
+            repo.upsert_checkin(uid, day, completed=bool(tracked) and tracked <= rated)
+            return row_json(saved)
 
     @app.post("/api/demo/load")
     def demo_load(request: Request) -> dict[str, JsonValue]:
@@ -320,7 +290,10 @@ def create_app(
             Orchestrator._lock(session, uid)
             repo = Repository(session)
             advance_demo(repo, uid, body.days, runtime.clock)
-            return experiment_view(repo, uid, runtime)
+            result = experiment_view(repo, uid, runtime)
+            result["timeline"] = timeline_view(repo, uid, runtime)
+            result["insights"] = insights_view(repo, uid, runtime)
+            return result
 
     @app.delete("/api/me")
     def delete_me(request: Request) -> JSONResponse:

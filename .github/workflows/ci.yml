@@ -34,3 +34,16 @@ jobs:
       - run: make setup
       - run: make check
       - run: make eval-regression
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build local container images
+        run: |
+          if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+            cp .env.example .env
+            docker compose build
+          else
+            echo "Docker is unavailable on this runner; local build verification is required."
+          fi

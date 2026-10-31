@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+@theme {
+  --font-serif: Georgia, "Book Antiqua", "Palatino Linotype", serif;
+  --font-sans: "Optima", "Candara", "Trebuchet MS", sans-serif;
+}

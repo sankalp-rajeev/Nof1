@@ -15,7 +15,7 @@ make setup
 # Copy .env.example to .env and configure local settings as needed.
 make db-up
 make migrate
-make gate PHASE=6
+make gate PHASE=7
 make dev
 ```
 
@@ -26,6 +26,12 @@ P1 supplies validated domain records, PostgreSQL storage, name normalization, an
 mapping. P4 supplies provider routing, budgets, traces, prompts, and deterministic
 safety checks; P5 adds the backend chat workflow. Tests use scripted
 LLM responses, block outbound sockets/DNS, and access only the local test database.
+
+P7 adds the cookie-scoped API and a mobile-first research journal. The demo load,
+simulated Next day and Skip to end controls run without LLM calls; the scheduled
+days endpoint supports corrections until the verdict is frozen. Run the full local
+stack with `docker compose build` and `docker compose up -d --wait`, then open
+http://localhost:3000. Hosted deployment remains human-operated; see [DEPLOY.md](DEPLOY.md).
 
 The storage suite requires an **empty** database whose name ends in `_test` and
 refuses a remote test host. It applies the migration, rolls each test back, then
@@ -141,6 +147,9 @@ acceptance, and 14 simulated days; its planted effect returns helped. The first
 null-cohort control does not return helped. These examples complement the larger
 P3 evaluation; they do not establish universal power or a zero false-positive rate.
 
-The authorized live dev-chat run exposed analyzer provider errors and a misleading
-check-in acknowledgement. Those findings remain unfixed pending review; the P6
-gate exercises FakeLLM and deterministic simulation rather than claiming live success.
+The analyzer uses JSON generation with full Pydantic validation after a live bisect
+isolated a provider grammar failure. Persistence acknowledgements require typed,
+named receipts, and counts must match those receipts. Bare ratings and latest-date
+lookups use deterministic replies; provider failures ask the user to retry later.
+The [diagnostic report](evals/reports/chat_diagnosis_2026-10-31.md) records the live
+synthetic smoke evidence. Automated gates remain offline with FakeLLM and deterministic simulation.

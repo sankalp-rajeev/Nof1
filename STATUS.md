@@ -15,7 +15,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P4 | LLM infrastructure and safety | [x] | [x] |
 | P5 | Extraction, memory, chat orchestration | [x] | [x] |
 | P6 | Experiment loop | [x] | [x] |
-| P7 | API and frontend | [ ] | [ ] |
+| P7 | API and frontend | [x] | [ ] |
 | P8 | Chat-mode simulation and live evals | [ ] | [ ] |
 | P9 | Deploy and polish | [ ] | [ ] |
 
@@ -32,14 +32,44 @@ Deliverables:
 - Build the specified mobile-first journal panes with explicit safety/phase/verdict styling.
 - Supply container/deploy instructions, endpoint/component tests and manual smoke evidence.
 
-Gate [ ]: pending. Human [ ]: pending. Build API/demo before frontend per instruction.
+Gate [x]: `make gate PHASE=7` passed: 521 backend / 17 frontend tests, lint and
+strict type checks. Human [ ]: pending. API/demo were built before the frontend.
 
 API increment: all section 11 routes, cookie identity, errors, CORS and rate limit
 implemented. Migration 0005 stores the exact chat replay envelope. Eight API tests
 cover demo load/advance with zero LLM calls, daily-vs-bulk clock equivalence,
 scheduled-day upserts/422/409/scope, red flags, idempotency and deletion.
 `make gate PHASE=7` passed for this API increment: 517 backend / 2 existing frontend
-tests. Frontend and container/deploy deliverables remain; phase gate table stays open.
+tests. This increment was committed and pushed before frontend work.
+
+Final increment: mobile-first journal, chat, timeline, expandable insight evidence,
+proposal/acceptance/adherence flow, explicit BASELINE/ON/OFF shapes and washout,
+sober verdict, persistent disclaimer, demo controls and account deletion. Added
+non-root images, same-origin proxy, container CI and DEPLOY.md instructions.
+Twelve API tests and fifteen new frontend tests cover the integrated behavior.
+
+Local Docker build and full-stack smoke passed, including all phases, zero-LLM
+demo advancement, true days upsert, 422/409 validation, frozen verdict and deletion.
+Installed-Edge QA captured all seven requested states at 390px and 1280px:
+14 screenshots, zero axe WCAG A/AA violations, zero horizontal overflow, zero
+observed layout breaks or color-only phases, and zero visible application errors.
+Checked text contrast minimum 5.91:1; control boundaries 3.88:1. Verdict label,
+sample size and limitation are all 16px. Initial QA found request amplification
+on Next day; bundling timeline/insights into advance fixed it without changing
+the rate limit. The full capture rerun passed.
+
+Screenshots/raw QA stay uncommitted in `.cache/qa/`. Both disposable accounts,
+browser contexts/cookies and the temporary profile were deleted; zero LLM calls
+verified. Normal .env-backed budgets were restored, and axe-core is absent from
+the production runtime. `.env` remains ignored and unchanged. Regression passed
+(red 71/71, benign false alarms 0/98, guard bad 108/108, good 75/75); approved
+baseline hash remains unchanged. See `evals/reports/p7-local-qa.md` for evidence.
+
+DECISIONS.md records API replay/upsert/scan semantics, creator styling, same-origin
+client behavior, authorized browser fallback/dev-only axe dependency, demo request
+batching, QA cleanup and container/deployment choices. No hosted deployment or
+live-URL smoke was run; those human steps remain in DEPLOY.md. CURRENT stays P7;
+P8 has not started.
 
 ### P6 Blind G7 and final follow-ups (2026-10-31)
 
@@ -966,6 +996,41 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
       Tests  2 passed (2)
    Start at  17:43:08
    Duration  1.29s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P7 gate PASS
+```
+
+### P7 final gate evidence (2026-10-31)
+
+```text
+tests\test_sim_scoring.py .........                                      [ 84%]
+tests\test_sim_world.py ......                                           [ 85%]
+tests\test_stats_experiment.py ......................                    [ 89%]
+tests\test_stats_panel.py ...                                            [ 90%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 95%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 521 passed, 1 warning in 53.43s =======================
++ npm.cmd run test -- -t \[p[0-7]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-7]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  4 passed (4)
+      Tests  17 passed (17)
+   Start at  18:37:53
+   Duration  2.16s (environment 65%, tests 16%, setup 15%, transform 3%, import 1%)
 
 P7 gate PASS
 ```
