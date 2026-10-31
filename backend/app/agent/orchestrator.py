@@ -14,6 +14,15 @@ from sqlalchemy.orm import Session
 from app.agent.analyzer import TurnAnalysis, analyze
 from app.agent.composer import CLARIFY, FAILED, LIMITED, Composed, build_facts, compose, safe_fixed
 from app.agent.context import ContextBuilder
+from app.agent.experiment_composer import (
+    compose_insight,
+    compose_instruction,
+    compose_protocol,
+    compose_verdict,
+    instruction,
+)
+from app.agent.experiment_manager import ExperimentError, ExperimentManager
+from app.agent.insights import InsightSurfacer
 from app.agent.llm.base import CallContext, ProviderError
 from app.agent.llm.cost import BudgetExceeded
 from app.agent.llm.router import LLMRouter
@@ -37,6 +46,7 @@ from app.db.repos import Repository
 from app.domain.clock import today
 from app.domain.normalize import normalize
 from app.domain.schemas import (
+    ConfirmExperiment,
     ExperimentAdherence,
     ExposureChecklist,
     MessageInput,
@@ -86,6 +96,8 @@ class Orchestrator:
             user = repo.get_user(user_id)
             if user is None:
                 raise ValueError("User not found")
+            manager = ExperimentManager(repo, user_id, clock=self.clock)
+            active = manager.advance()
             day = today(user, now=self.clock())
             progress, state = load_progress(repo, user_id, day)
             state.pending = next_question(repo, user_id, day, progress, state)
@@ -94,6 +106,21 @@ class Orchestrator:
             reply = safe_fixed(
                 question_text(state.pending) or "Your check-in is up to date.", facts
             )
+            if active is not None and active.status in {"baseline", "running"}:
+                plan_facts = instruction(active, manager)
+                if plan_facts is not None:
+                    facts = facts.model_copy(
+                        update={
+                            "kind": "experiment",
+                            "phase": plan_facts.phase,
+                            "washout": plan_facts.washout,
+                        }
+                    )
+                    from app.agent.safety.templates import render_fallback
+
+                    reply = safe_fixed(
+                        (render_fallback(facts) + " " + question_text(state.pending)).strip(), facts
+                    )
             return self._save(repo, user_id, uuid4(), Composed(reply, facts))
 
     def process(
@@ -105,6 +132,7 @@ class Orchestrator:
             user = repo.get_user(user_id)
             if user is None:
                 raise ValueError("User not found")
+            ExperimentManager(repo, user_id, clock=self.clock).advance()
             if client_msg_id is not None:
                 previous = repo.find_message(user_id, client_msg_id)
                 if previous is not None:
@@ -137,17 +165,37 @@ class Orchestrator:
             progress, state = load_progress(repo, user_id, day)
             if state.pending is None and progress.onboarding != "done":
                 state.pending = next_question(repo, user_id, day, progress, state)
-            tools = ToolRegistry(repo, user_id, day, trace_id)
-            handled = consume(content, state, progress, tools, message.id)
+            tools = ToolRegistry(repo, user_id, day, trace_id, clock=self.clock)
+            experiment_answer = isinstance(state.pending, ConfirmExperiment)
+            try:
+                handled = consume(content, state, progress, tools, message.id)
+            except ExperimentError as error:
+                state.pending = None
+                progress.experiment_confirmation = None
+                save_progress(repo, user_id, progress, state)
+                return self._save(
+                    repo, user_id, trace_id, Composed(str(error), Facts(), fallback=True)
+                )
             before_progress, before_state = (
                 progress.model_copy(deep=True),
                 state.model_copy(deep=True),
             )
             try:
                 with session.begin_nested():
-                    return self._turn(user, repo, tools, message, content, progress, state, handled)
+                    return self._turn(
+                        user,
+                        repo,
+                        tools,
+                        message,
+                        content,
+                        progress,
+                        state,
+                        handled,
+                        experiment_answer,
+                    )
             except BudgetExceeded:
                 progress, state = before_progress, before_state
+                ExperimentManager(repo, user_id, clock=self.clock).advance()
                 state.pending = next_question(repo, user_id, day, progress, state)
                 state.last_was_clarification = False
                 save_progress(repo, user_id, progress, state)
@@ -173,6 +221,7 @@ class Orchestrator:
         progress: Progress,
         state: PendingState,
         handled: bool,
+        experiment_answer: bool = False,
     ) -> ChatResult:
         identity = UserRecord.model_validate(user)
 
@@ -182,8 +231,9 @@ class Orchestrator:
         builder = ContextBuilder(tools)
         base = builder.base(state, content, message.id)
         calls = 0
+        experiment_error: str | None = None
         if handled:
-            analysis = TurnAnalysis(intent="checkin")
+            analysis = TurnAnalysis(intent="experiment" if experiment_answer else "checkin")
         else:
             extracted = analyze(self.router, base.messages, ctx=ctx("analyzer"))
             calls = extracted.attempts
@@ -203,7 +253,9 @@ class Orchestrator:
                 return self._emergency(
                     repo, user.id, message.id, message.trace_id, "possible_emergency", "llm", calls
                 )
-            self._apply(analysis, tools, state, progress, message.id)
+            experiment_error = self._apply(analysis, tools, state, progress, message.id)
+        manager = ExperimentManager(repo, user.id, clock=self.clock)
+        manager.advance()
         clarification = (
             analysis.clarification_question
             if (
@@ -233,14 +285,76 @@ class Orchestrator:
                 Composed(MEDICAL_REFUSAL, build_facts(payload, state.pending)),
                 calls=calls,
             )
+        if experiment_error is not None:
+            return self._save(
+                repo,
+                user.id,
+                message.trace_id,
+                Composed(experiment_error, build_facts(payload, None), fallback=True),
+                calls=calls,
+            )
+        completed = repo.session.scalar(
+            select(m.Experiment)
+            .where(m.Experiment.user_id == user.id, m.Experiment.status == "completed")
+            .order_by(m.Experiment.ended_on.desc(), m.Experiment.created_at.desc())
+            .limit(1)
+        )
+        if completed is not None and completed.id != progress.last_verdict_id:
+            result = compose_verdict(self.router, completed, ctx("composer_experiment"))
+            progress.last_verdict_id = completed.id
+            save_progress(repo, user.id, progress, state)
+            return self._save(repo, user.id, message.trace_id, result, calls=calls)
+        active = manager.active()
+        if analysis.intent == "experiment" and active is not None:
+            if (
+                active.status == "proposed"
+                or active.status == "accepted"
+                or isinstance(state.pending, ConfirmExperiment)
+            ):
+                result = compose_protocol(
+                    self.router,
+                    active,
+                    manager,
+                    ctx("composer_experiment"),
+                    abandon=progress.experiment_confirmation == "abandon",
+                )
+            elif instruction(active, manager) is not None:
+                result = compose_instruction(
+                    self.router, active, manager, ctx("composer_experiment"), state.pending
+                )
+            else:
+                result = Composed(
+                    "The scheduled days are finished. You can still fill missing entries "
+                    "while the experiment remains open.",
+                    build_facts(payload, None),
+                )
+            return self._save(repo, user.id, message.trace_id, result, calls=calls)
         if analysis.intent == "experiment":
             return self._save(
                 repo,
                 user.id,
                 message.trace_id,
-                Composed("Please review your experiment plan.", build_facts(payload, None)),
+                Composed("The experiment is closed.", build_facts(payload, None)),
                 calls=calls,
             )
+        surfacer = InsightSurfacer(repo, user.id, clock=self.clock)
+        surfacer.scan_if_needed()
+        if (
+            active is not None
+            and instruction(active, manager) is not None
+            and analysis.intent in {"checkin", "chitchat"}
+        ):
+            result = compose_instruction(
+                self.router, active, manager, ctx("composer_experiment"), state.pending
+            )
+            return self._save(repo, user.id, message.trace_id, result, calls=calls)
+        if active is None and not clarification and analysis.intent in {"checkin", "chitchat"}:
+            surfaced = surfacer.surface()
+            if surfaced is not None:
+                result = compose_insight(
+                    self.router, surfacer.snapshot(surfaced.id), ctx("composer_insight")
+                )
+                return self._save(repo, user.id, message.trace_id, result, calls=calls)
         tool_calls = 0
         pending = state.pending
         if analysis.intent == "ask_data":
@@ -269,7 +383,7 @@ class Orchestrator:
         state: PendingState,
         progress: Progress,
         message_id: UUID,
-    ) -> None:
+    ) -> str | None:
         tools.execute(
             "log_events",
             {
@@ -328,6 +442,34 @@ class Orchestrator:
         ):
             record_adherence(tools, pending, analysis.adherence)
             state.pending = None
+        if analysis.experiment_action is not None:
+            manager = ExperimentManager(tools.repo, tools.user_id, clock=tools.clock)
+            try:
+                if analysis.experiment_action == "start":
+                    manager.propose(exposure=analysis.experiment_target)
+                    state.pending = tools.repo.get_state(tools.user_id).pending
+                    progress.experiment_confirmation = "accept"
+                elif analysis.experiment_action == "accept":
+                    if (
+                        not isinstance(state.pending, ConfirmExperiment)
+                        or progress.experiment_confirmation != "accept"
+                    ):
+                        raise ExperimentError(
+                            "confirmation_required", "Please confirm a current proposal first."
+                        )
+                    manager.respond(state.pending.experiment_id, "accept")
+                    state.pending = None
+                    progress.experiment_confirmation = None
+                else:
+                    row = manager.active()
+                    if row is None:
+                        raise ExperimentError("not_found", "No current experiment was found.", 404)
+                    manager.request_abandon(row.id)
+                    state.pending = tools.repo.get_state(tools.user_id).pending
+                    progress.experiment_confirmation = "abandon"
+            except ExperimentError as error:
+                return str(error)
+        return None
 
     @staticmethod
     def _save(

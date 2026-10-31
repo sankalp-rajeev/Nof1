@@ -25,6 +25,14 @@ PATH_DAYS = 14
 CHAT_LOCK_NAMESPACE = 741905
 MAX_EXTRACTED_EVENTS = 40
 MAX_EVENT_NAME_LENGTH = 200
+PROPOSAL_EXPIRY_DAYS = 3
+EXPERIMENT_GRACE_DAYS = 3
+INSIGHT_COOLDOWN_DAYS = 3
+INSIGHT_MIN_DAYS = 14
+EXPERIMENT_LIMITATION = (
+    "This small, unblinded test concerns one person, uses day-level resampling, "
+    "and assumes a short washout."
+)
 TIME_OF_DAY_HOURS = {"morning": 8, "afternoon": 14, "evening": 19, "night": 22, "unspecified": 12}
 
 

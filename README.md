@@ -15,7 +15,7 @@ make setup
 # Copy .env.example to .env and configure local settings as needed.
 make db-up
 make migrate
-make gate PHASE=5
+make gate PHASE=6
 make dev
 ```
 
@@ -121,3 +121,26 @@ including validation/error status, usage, regeneration, and fallback flags.
 Error-row token reservations are marked estimated. Message text is not written
 to application logs. Other app environments, remote/test databases, non-Gemini
 routes, and unconfigured model placeholders are refused before any provider call.
+
+## Experiment loop (P6)
+
+Eligible tracked exposures can now be proposed and accepted with a confirmation.
+The fixed calendar starts tomorrow, with baseline and alternating ON/OFF blocks.
+Abandonment also requires confirmation. Dates advance with the user's local/demo
+clock; missed entries remain unknown, and late entries are accepted until completion.
+The verdict stores its own data snapshot and is unchanged by later rating corrections.
+
+Changed completed check-ins/checklists trigger scans. Pattern identity, sign/tier
+changes, and a three-day cooldown control surfacing. Each surfaced row preserves
+its evidence; structured evidence links are ready for the P7 UI. Daily narration
+keeps the scheduled label and washout wording, and verdicts include sample sizes
+and a limitation sentence even when generation falls back.
+
+The offline integration checks the pinned demo seed through insight, proposal,
+acceptance, and 14 simulated days; its planted effect returns helped. The first
+null-cohort control does not return helped. These examples complement the larger
+P3 evaluation; they do not establish universal power or a zero false-positive rate.
+
+The authorized live dev-chat run exposed analyzer provider errors and a misleading
+check-in acknowledgement. Those findings remain unfixed pending review; the P6
+gate exercises FakeLLM and deterministic simulation rather than claiming live success.

@@ -1,6 +1,7 @@
 """Small server-owned workflow state; reset daily skips without losing onboarding."""
 
 from datetime import date as LocalDate
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -18,6 +19,10 @@ class Progress(DomainModel):
     sleep_skipped: bool = False
     checklist_skipped: bool = False
     suggested_on: LocalDate | None = None
+    experiment_confirmation: Literal["accept", "abandon"] | None = None
+    scan_computed_at: datetime | None = None
+    latest_run_id: UUID | None = None
+    last_verdict_id: UUID | None = None
 
 
 def load_progress(repo: Repository, user_id: UUID, day: LocalDate) -> tuple[Progress, PendingState]:

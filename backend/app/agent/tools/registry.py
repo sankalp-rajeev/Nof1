@@ -1,9 +1,10 @@
 """Compact JSON tools with validation, savepoints, and read-only dispatch boundaries."""
 
 import logging
-from datetime import date
+from collections.abc import Callable
+from datetime import UTC, date, datetime
 from time import monotonic
-from typing import ClassVar
+from typing import ClassVar, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, JsonValue, TypeAdapter, ValidationError, model_validator
@@ -11,11 +12,20 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.agent.analyzer import ExtractedEvent
+from app.agent.experiment_manager import ExperimentError, ExperimentManager
 from app.config import TIMELINE_ROW_LIMIT
 from app.db import models as m
 from app.db.repos import Repository
 from app.domain.normalize import normalize
-from app.domain.schemas import DomainModel, EventInput, Kind, OutcomeTracking, PatternRecord
+from app.domain.schemas import (
+    DomainModel,
+    EventInput,
+    ExperimentRecord,
+    Kind,
+    OutcomeTracking,
+    PatternRecord,
+    Rating,
+)
 from app.domain.timeutil import map_event_time
 
 JSON = TypeAdapter(dict[str, JsonValue])
@@ -54,6 +64,28 @@ class EmptyArgs(DomainModel):
     pass
 
 
+class ProposeArgs(DomainModel):
+    pattern_id: UUID | None = None
+    exposure: str | None = None
+    outcome: str | None = None
+
+
+class RespondArgs(DomainModel):
+    id: UUID
+    action: Literal["accept", "abandon"]
+
+
+class RecordDayArgs(DomainModel):
+    id: UUID
+    date: date
+    adherence: bool | None
+    outcome_value: Rating | None = None
+
+
+class EvaluateArgs(DomainModel):
+    id: UUID
+
+
 class ToolRegistry:
     schemas: ClassVar[dict[str, type[BaseModel]]] = {
         "log_events": LogEventsArgs,
@@ -61,13 +93,26 @@ class ToolRegistry:
         "query_timeline": TimelineArgs,
         "get_insights": InsightsArgs,
         "get_experiment_status": EmptyArgs,
+        "propose_experiment": ProposeArgs,
+        "respond_experiment": RespondArgs,
+        "record_experiment_day": RecordDayArgs,
+        "evaluate_experiment": EvaluateArgs,
     }
     readonly: ClassVar[frozenset[str]] = frozenset(
         {"query_timeline", "get_insights", "get_experiment_status"}
     )
 
-    def __init__(self, repo: Repository, user_id: UUID, day: date, trace_id: UUID) -> None:
+    def __init__(
+        self,
+        repo: Repository,
+        user_id: UUID,
+        day: date,
+        trace_id: UUID,
+        *,
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+    ) -> None:
         self.repo, self.user_id, self.day, self.trace_id = repo, user_id, day, trace_id
+        self.clock = clock
 
     def descriptions(self) -> list[dict[str, JsonValue]]:
         return [
@@ -91,6 +136,15 @@ class ToolRegistry:
                 args = self.schemas[name].model_validate(arguments)
                 with self.repo.session.begin_nested():
                     result = JSON.validate_python(getattr(self, name)(args))
+            except ExperimentError as error:
+                result = {
+                    "error": {
+                        "code": error.code,
+                        "message": str(error),
+                        "status": error.status_code,
+                        "hint": "Review the current experiment and confirmation.",
+                    }
+                }
             except (ValidationError, ValueError, SQLAlchemyError):
                 result = self.error("invalid_arguments", "Use the tool's declared argument schema.")
         logger.info(
@@ -253,3 +307,46 @@ class ToolRegistry:
                 "protocol": experiment.protocol,
             }
         }
+
+    def _manager(self) -> ExperimentManager:
+        return ExperimentManager(self.repo, self.user_id, clock=self.clock)
+
+    def propose_experiment(self, args: ProposeArgs) -> dict[str, JsonValue]:
+        """Code-only proposal. Args: owned pattern_id or tracked exposure and optional outcome.
+        Returns the proposed protocol and pending confirmation; ineligible targets return an
+        explained error. Never callable by the free model loop.
+        """
+        row = self._manager().propose(
+            pattern_id=args.pattern_id, exposure=args.exposure, outcome=args.outcome
+        )
+        return JSON.validate_python(ExperimentRecord.model_validate(row).model_dump(mode="json"))
+
+    def respond_experiment(self, args: RespondArgs) -> dict[str, JsonValue]:
+        """Code-only response to a pending confirmation. Args: owned id and accept/abandon.
+        Returns the updated protocol; absent confirmation, terminal status, and illegal
+        transitions return an error without changing the frozen snapshot.
+        """
+        row = self._manager().respond(args.id, args.action)
+        return JSON.validate_python(ExperimentRecord.model_validate(row).model_dump(mode="json"))
+
+    def record_experiment_day(self, args: RecordDayArgs) -> dict[str, JsonValue]:
+        """Code-only current/late entry. Args: owned id, scheduled date, adherence, optional
+        outcome_value. Returns date/phase/washout/adherence; future and unscheduled dates
+        are refused. Completed experiments return terminal status 409 and keep their verdict.
+        """
+        row = self._manager().record_day(
+            args.id, args.date, args.adherence, outcome_value=args.outcome_value
+        )
+        return {
+            "date": row.date.isoformat(),
+            "phase": row.phase,
+            "washout": row.washout,
+            "adherence": row.adherence,
+        }
+
+    def evaluate_experiment(self, args: EvaluateArgs) -> dict[str, JsonValue]:
+        """Code-only completed result. Args: owned id. Returns immutable verdict and days-used
+        snapshot. Incomplete or foreign experiments return an error; completed verdicts
+        are never recomputed from later corrections.
+        """
+        return self._manager().evaluate(args.id)

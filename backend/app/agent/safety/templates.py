@@ -54,7 +54,7 @@ def render_guarded(router: LLMRouter, facts: Facts, *, ctx: CallContext) -> Guar
         else "composer_insight"
         if facts.kind == "insight"
         else "composer_experiment"
-        if facts.kind in {"experiment", "verdict"}
+        if facts.kind in {"experiment", "verdict", "protocol"}
         else "composer_answer"
     )
     prompt = load_prompt(name)

@@ -28,7 +28,7 @@ class Facts(BaseModel):
     dates: tuple[date, ...] = ()
     exposures: tuple[str, ...] = ()
     outcomes: tuple[str, ...] = ()
-    kind: Literal["checkin", "insight", "verdict", "answer", "experiment"] = "checkin"
+    kind: Literal["checkin", "insight", "verdict", "answer", "experiment", "protocol"] = "checkin"
     phase: Literal["baseline", "on", "off"] | None = None
     washout: bool = False
     rating_scale: bool = False
@@ -222,7 +222,7 @@ class OutputGuard:
     @staticmethod
     def _schedule(text: str, facts: Facts) -> bool:
         labels = PHASE_RE.findall(text)
-        if facts.kind == "verdict" and facts.phase is None:
+        if facts.kind in {"verdict", "protocol"} and facts.phase is None:
             return True  # Historical phase comparisons are not today's instructions.
         if facts.phase is None:
             return not labels

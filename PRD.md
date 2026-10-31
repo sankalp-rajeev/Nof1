@@ -465,7 +465,7 @@ Application rules (code):
 
 **ConversationState**: `pending` as listed in section 6. Exactly one pending question at a time. The next question is chosen by the F2 priority after every turn.
 
-`progress` is server-owned bounded workflow metadata, not LLM memory. It preserves onboarding stage and daily skips across requests. Daily skips reset by `today(user)` while onboarding and the last suggestion date persist. A skipped checklist is left unanswered and is not asked again that day. Empty analyzer checklist fields without an explicit yes-list or none are not an answer.
+`progress` is server-owned bounded workflow metadata, not LLM memory. It preserves onboarding stage and daily skips across requests, experiment confirmation intent, scan watermark/latest run, and the last delivered verdict id. Daily skips reset by `today(user)` while onboarding and the last suggestion date persist. A skipped checklist is left unanswered and is not asked again that day. Empty analyzer checklist fields without an explicit yes-list or none are not an answer.
 
 **ExperimentManager**: owns the lifecycle in 7.4. On each request it advances status by `today(user)`. It runs the verdict on completion and sets the daily pending `experiment_adherence` on ON and OFF days.
 
@@ -515,7 +515,7 @@ Files in `agent/prompts/` with frontmatter `version: N`: `turn_analyzer.md`, `co
 - G6 length: check-in replies at most 120 words.
 - Footer: code appends a fixed non-medical-advice sentence to insight and verdict messages after the guard (not LLM generated).
 
-Blind-probe clarifications: G1 also blocks diagnostic assertion frames when a condition name is absent from the vocabulary; an explicit first-person refusal or inability to diagnose is allowed, without exempting other claims. G2 includes soft dose adjustments and supplement classes. G3 includes inflections of worsen, aggravate, reduce, increase, decrease, improve, and relieve; only the specified past-tense verdict wording is whitelisted. G4 includes frequency words such as twice and thrice. G5 constrains current experiment instructions; a verdict with no current scheduled phase may compare historical ON/OFF labels.
+Blind-probe clarifications: G1 also blocks diagnostic assertion frames when a condition name is absent from the vocabulary; an explicit first-person refusal or inability to diagnose is allowed, without exempting other claims. G2 includes soft dose adjustments and supplement classes. G3 includes inflections of worsen, aggravate, reduce, increase, decrease, improve, and relieve; only the specified past-tense verdict wording is whitelisted. G4 includes frequency words such as twice and thrice. G5 constrains current experiment instructions; a verdict with no current scheduled phase may compare historical ON/OFF labels. P6's code-selected protocol kind similarly permits future calendar labels when there is no current phase; it never exempts daily instructions with a scheduled phase.
 
 On violation: regenerate once with the violation list in the prompt, else fall back to a deterministic template built from FACTS. Templates are code; a test asserts every template renders only numbers present in its FACTS. Track regen and fallback rates.
 

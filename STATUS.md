@@ -1,6 +1,6 @@
 # STATUS
 
-CURRENT: P5
+CURRENT: P6
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -12,7 +12,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P3 | Simulator (stats-only) and eval harness | [x] | [x] |
 | P4 | LLM infrastructure and safety | [x] | [x] |
 | P5 | Extraction, memory, chat orchestration | [x] | [x] |
-| P6 | Experiment loop | [ ] | [ ] |
+| P6 | Experiment loop | [x] | [ ] |
 | P7 | API and frontend | [ ] | [ ] |
 | P8 | Chat-mode simulation and live evals | [ ] | [ ] |
 | P9 | Deploy and polish | [ ] | [ ] |
@@ -20,6 +20,34 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P6 Experiment loop (2026-10-31)
+
+Deliverables:
+- Enforce eligibility, confirmed transitions, schedule dates, expiry, and one active experiment.
+- Accept scheduled late data, compute completion once, and freeze verdict evidence.
+- Scan changed check-ins and surface eligible pattern identities with cooldowns and snapshots.
+- Compose guarded protocol, daily, insight, and verdict messages from deterministic facts.
+- Verify lifecycle, narration, immutable evidence, and simulator integrations offline.
+
+Gate: `make gate PHASE=6` exited 0; 463 backend tests and 2 frontend tests passed.
+Ruff, formatting, strict mypy, ESLint, and TypeScript checks passed.
+`make eval-regression` exited 0 with full A/N absolute gates, frozen-subset drift,
+all P4 safety cases, and the approved P5 E7 FakeLLM component.
+
+Built the eligibility/confirmation lifecycle, date-driven schedule handling, late
+entries and immutable verdict snapshots; registered the experiment mutation tools
+as code-only operations. Added triggered scans, empty-run watermarks, identity and
+cooldown resurfacing, frozen evidence, and protocol/daily/insight/verdict composers.
+Twenty-one P6 tests cover lifecycle, late data, all instruction days, resurfacing,
+chat confirmations, a full demo-simulation helped result, and a null control.
+
+DECISIONS.md records logical date handling, confirmation metadata, completion and
+snapshot semantics, scan identities, narration anchors/protocol context, legacy
+records, and the offline-only P6 validation. No baseline, test threshold, or
+held-out cohort changed. The P5 live provider failures and misleading ordinary
+check-in acknowledgement remain unfixed, as requested. No further live generation
+was used for P6. P6 awaits human approval; P7 has not started.
 
 ### P5 Extraction, memory, and orchestration (2026-10-31)
 
@@ -715,4 +743,41 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
    Duration  1.28s (environment 74%, setup 16%, tests 8%, transform 1%)
 
 P5 gate PASS
+```
+
+### P6 final gate evidence (2026-10-31)
+
+Gate output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 82%]
+tests\test_sim_world.py ......                                           [ 83%]
+tests\test_stats_experiment.py ......................                    [ 88%]
+tests\test_stats_panel.py ...                                            [ 88%]
+tests\test_stats_patterns.py ......................                      [ 93%]
+tests\test_stats_storage.py .......                                      [ 95%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 463 passed, 1 warning in 31.54s =======================
++ npm.cmd run test -- -t \[p[0-6]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-6]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  14:14:15
+   Duration  1.27s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P6 gate PASS
 ```

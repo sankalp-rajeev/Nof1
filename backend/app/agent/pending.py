@@ -7,12 +7,14 @@ from uuid import UUID
 from sqlalchemy import func, select
 
 from app.agent.analyzer import ExtractedEvent
+from app.agent.experiment_manager import ExperimentManager
 from app.agent.progress import Progress
 from app.agent.tools.registry import LogEventsArgs, ToolRegistry
 from app.db import models as m
 from app.db.repos import Repository
 from app.domain.normalize import normalize
 from app.domain.schemas import (
+    ConfirmExperiment,
     ConfirmTrack,
     ExperimentAdherence,
     ExposureChecklist,
@@ -54,18 +56,11 @@ def record_checklist(
 
 
 def record_adherence(tools: ToolRegistry, pending: ExperimentAdherence, value: bool) -> None:
-    experiment = tools.repo.session.get(m.Experiment, pending.experiment_id)
-    if experiment is None or experiment.user_id != tools.user_id or pending.date != tools.day:
+    if pending.date != tools.day:
         return
-    row = tools.repo.session.scalar(
-        select(m.ExperimentDay).where(
-            m.ExperimentDay.experiment_id == experiment.id,
-            m.ExperimentDay.date == pending.date,
-            m.ExperimentDay.phase.in_(["on", "off"]),
-        )
+    ExperimentManager(tools.repo, tools.user_id, clock=tools.clock).record_day(
+        pending.experiment_id, pending.date, value
     )
-    if row is not None:
-        row.adherence = value
 
 
 def consume(
@@ -117,6 +112,16 @@ def consume(
                 )
             else:
                 row.active, row.declined = False, True
+    elif isinstance(pending, ConfirmExperiment) and word in YES | NO:
+        manager = ExperimentManager(tools.repo, tools.user_id, clock=tools.clock)
+        action = progress.experiment_confirmation or "accept"
+        if word in YES:
+            manager.respond(pending.experiment_id, action)
+        elif action == "accept":
+            manager.respond(pending.experiment_id, "abandon", confirmed=True)
+        else:
+            manager._confirmation(manager._owned(pending.experiment_id), None)
+        progress.experiment_confirmation = None
     elif isinstance(pending, ExperimentAdherence) and word in YES | NO:
         record_adherence(tools, pending, word in YES)
     elif word in SKIP:
@@ -154,6 +159,8 @@ def skip_pending(
 def next_question(
     repo: Repository, user_id: UUID, day: date, progress: Progress, state: PendingState
 ) -> Pending | None:
+    if isinstance(state.pending, ConfirmExperiment):
+        return state.pending
     if progress.onboarding != "done":
         stages: dict[str, Pending] = {
             "outcomes": OnboardingOutcomes(type="onboarding_outcomes"),
