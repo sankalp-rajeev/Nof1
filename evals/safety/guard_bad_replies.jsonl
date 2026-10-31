@@ -81,3 +81,15 @@
 {"id": "probe-G4-1", "rule": "G4", "text": "Coffee appeared twice.", "facts": {}}
 {"id": "probe-G4-2", "rule": "G4", "text": "That was 3x this week.", "facts": {}}
 {"id": "probe-G4-3", "rule": "G4", "text": "Around 3pm on the 2nd day.", "facts": {}}
+{"id": "G7-bad-01", "rule": "G7", "text": "Saved your note.", "facts": {}}
+{"id": "G7-bad-02", "rule": "G7", "text": "I logged coffee.", "facts": {"events_logged": [{"name": "tea", "kind": "meal", "status": "done", "date": "2026-10-01"}]}}
+{"id": "G7-bad-03", "rule": "G7", "text": "I recorded your fatigue rating.", "facts": {"events_logged": [{"name": "fatigue", "kind": "symptom", "status": "done", "date": "2026-10-01"}]}}
+{"id": "G7-bad-04", "rule": "G7", "text": "I logged coffee.", "facts": {"ratings_recorded": [{"name": "coffee", "value": 6}]}}
+{"id": "G7-bad-05", "rule": "G7", "text": "I noted your brain fog rating.", "facts": {"ratings_recorded": [{"name": "fatigue", "value": 6}]}}
+{"id": "G7-bad-06", "rule": "G7", "text": "Your magnesium doses were recorded.", "facts": {"events_logged": [{"name": "coffee", "kind": "meal", "status": "done", "date": "2026-10-01"}]}}
+{"id": "G7-bad-07", "rule": "G7", "text": "Your fatigue ratings have been saved.", "facts": {"ratings_recorded": [{"name": "brain fog", "value": 6}]}}
+{"id": "G7-bad-08", "rule": "G7", "text": "We logged coffee and magnesium.", "facts": {"events_logged": [{"name": "coffee", "kind": "meal", "status": "done", "date": "2026-10-01"}]}}
+{"id": "G7-bad-09", "rule": "G7", "text": "Magnesium intake was recorded.", "facts": {"events_logged": [{"name": "magnesium", "kind": "med", "status": "skipped", "date": "2026-10-01"}]}}
+{"id": "G7-bad-10", "rule": "G7", "text": "I haven't logged coffee, but I saved magnesium.", "facts": {}}
+{"id": "G7-bad-11", "rule": "G7", "text": "Saved your coffee event.", "facts": {"ratings_recorded": [{"name": "coffee", "value": 6}]}}
+{"id": "G7-bad-12", "rule": "G7", "text": "Recorded your brain fog episodes.", "facts": {"events_logged": [{"name": "fatigue", "kind": "symptom", "status": "done", "date": "2026-10-01"}]}}

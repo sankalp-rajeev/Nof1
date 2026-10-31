@@ -30,10 +30,10 @@ def render_fallback(facts: Facts) -> str:
             " This day is not counted." if facts.washout else ""
         )
     if facts.kind == "insight":
-        return "There may be a possible pattern in your records. Review the recorded evidence."
+        return "There may be a possible pattern in your data. Review the evidence."
     if facts.kind == "verdict":
-        return "The recorded result is available. Review the test data and its limitations."
-    return "Saved your note. Please continue with the pending check-in when ready."
+        return "The result is available. Review the test data and its limitations."
+    return "Please continue with the pending check-in when ready."
 
 
 class Reply(BaseModel):

@@ -1,6 +1,6 @@
 """Two attempts total for schema validation; failures return a defined empty result."""
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
@@ -25,6 +25,7 @@ def generate_structured(
     schema: type[T],
     ctx: CallContext,
     max_tokens: int,
+    validate: Callable[[T], None] | None = None,
 ) -> StructuredResult[T]:
     pending = list(messages)
     for attempt in range(2):
@@ -32,8 +33,11 @@ def generate_structured(
             pending, schema=schema, max_tokens=max_tokens, temperature=0, ctx=ctx
         )
         try:
-            return StructuredResult(schema.model_validate_json(response.text), attempt + 1)
-        except ValidationError:
+            value = schema.model_validate_json(response.text)
+            if validate is not None:
+                validate(value)
+            return StructuredResult(value, attempt + 1)
+        except (ValidationError, ValueError):
             router.mark_invalid(response)
             pending.append(LLMMessage("system", "Return valid JSON matching the supplied schema."))
     return StructuredResult(None, 2)

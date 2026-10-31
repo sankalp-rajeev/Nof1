@@ -2,6 +2,13 @@
 
 CURRENT: P6
 
+P7 HOLD (2026-10-31): diagnosis and six-message smoke fixes complete; P7 has not
+started. Conditional human approval for test/fixture edits was received and all
+conditions are implemented: typed named receipts, facts-only 14-case diff, original
+text-byte protection, new G7 cases, preserved G6 failures, fixed rating path and
+PRD 8.2 update. No thresholds or statistical baseline changed. New cases await
+human review; P6 phase approval remains separate.
+
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
 | Phase | Name | Gate | Human |
@@ -20,6 +27,45 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P6 Analyzer diagnosis and chat correctness follow-up (2026-10-31)
+
+Deliverables:
+- Capture private-data-safe Google diagnostics and isolate the real schema failure.
+- Use analyzer JSON plus Pydantic validation; separate actual usage and reservations.
+- Enforce typed named persistence receipts with G7 and facts-only composers.
+- Make rating acknowledgement/question deterministic and provider failure explicit.
+- Preserve reviewed text bytes, verify new cases, and rerun all six synthetic probes.
+
+Gate [x]: `make gate PHASE=6` passed, 490 backend tests and 2 frontend tests.
+Ruff, formatting, strict mypy, ESLint and TypeScript passed. `make eval-regression`
+passed with red 71/71, benign false alarms 0/98, bad guard 95/95 and good guard
+69/69; no issues. Baseline SHA-256 remains
+`8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257`.
+
+The original four detailed errors could not be recovered from deleted throwaway
+rows. Four neutral reproductions all returned ClientError / HTTP 400 /
+INVALID_ARGUMENT / Request contains an invalid argument. Bisect a/b/c passed;
+only full TurnAnalysis grammar failed. Plain JSON plus unchanged Pydantic schema
+then passed. No output-cap/thinking change, model change, dependency or API route.
+Migration 0004 preserves conservative reservations while actual failed usage is 0.
+
+The first gate on the new G7 contract failed against old unbacked-save fixtures
+(16 failed, 465 passed); work on those assertions waited for explicit human
+approval. The approved edits preserve all 63 original good-case text bytes and
+all thresholds, with a 14-case facts-only diff. Added 12 bad / 6 good G7 cases;
+original G6-bad still triggers G6. Neutral FakeLLM acknowledgement passes all guards.
+
+Final live synthetic run: all six cases passed, including database effects.
+Actual per-case input/output totals: 2257/149, 2113/71, 0/0, 1783/37, 0/0,
+6271/296. Event counts [3,1,0,0,0,0], one brain-fog rating=6; no provider errors,
+validation rejections, regeneration or guard fallback. Emergency fallback=true
+is the intended fixed escalation, with zero LLM calls. Throwaway cleanup checked.
+Intermediate wrong/rejected outputs, replies and call-level usage are recorded in
+`evals/reports/chat_diagnosis_2026-10-31.md`; DECISIONS.md logs cause and changes.
+
+Review: `evals/safety/review-g7.md` contains only new cases; facts-only diff is
+`evals/safety/g7_facts_diff.json`. P7 remains on hold pending human direction.
 
 ### P6 Experiment loop (2026-10-31)
 
@@ -778,6 +824,41 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
       Tests  2 passed (2)
    Start at  14:14:15
    Duration  1.27s (environment 73%, setup 16%, tests 9%, transform 1%)
+
+P6 gate PASS
+```
+
+### P6 chat-fix final gate evidence (2026-10-31)
+
+```text
+tests\test_sim_scoring.py .........                                      [ 83%]
+tests\test_sim_world.py ......                                           [ 84%]
+tests\test_stats_experiment.py ......................                    [ 88%]
+tests\test_stats_panel.py ...                                            [ 89%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 95%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 490 passed, 1 warning in 34.01s =======================
++ npm.cmd run test -- -t \[p[0-6]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-6]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  15:05:38
+   Duration  1.24s (environment 73%, setup 16%, tests 9%, transform 1%)
 
 P6 gate PASS
 ```

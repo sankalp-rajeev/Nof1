@@ -138,9 +138,20 @@ class CostTracker:
                 if self.mode == "app"
                 else records
             )
-            input_used = sum(row.input_tokens + row.output_tokens for row in scope)
+            input_used = sum(
+                row.input_tokens
+                + row.output_tokens
+                + row.reserved_input_tokens
+                + row.reserved_output_tokens
+                for row in scope
+            )
             spend = sum(
-                (Decimal(str(row.cost_usd)) for row in scope if row.cost_usd is not None),
+                (
+                    Decimal(str(value))
+                    for row in scope
+                    for value in (row.cost_usd, row.reserved_cost_usd)
+                    if value is not None
+                ),
                 Decimal(0),
             )
             projected = (
@@ -187,14 +198,13 @@ class CostTracker:
                 prompt_version=prompt_version,
                 data_class=actual_class,
                 attempt=attempt,
-                input_tokens=0 if error else input_estimate,
-                output_tokens=0 if error else self.settings.max_output_tokens,
+                input_tokens=0,
+                output_tokens=0,
+                reserved_input_tokens=0 if error else input_estimate,
+                reserved_output_tokens=0 if error else self.settings.max_output_tokens,
+                reserved_cost_usd=float(projected) if not error and projected is not None else None,
                 latency_ms=0,
-                cost_usd=0
-                if error and price
-                else float(projected)
-                if projected is not None
-                else None,
+                cost_usd=0 if price else None,
                 status="budget" if error else "error",
                 error=error or "reserved",
                 created_at=now,

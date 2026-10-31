@@ -1,0 +1,361 @@
+[
+  {
+    "id": "G4-good-1",
+    "before": {
+      "numbers": [
+        12
+      ]
+    },
+    "after": {
+      "numbers": [
+        12
+      ],
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-02"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-03"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-04"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-05"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-06"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-07"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-08"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-09"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-10"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-11"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-12"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G4-good-2",
+    "before": {
+      "numbers": [
+        2
+      ]
+    },
+    "after": {
+      "numbers": [
+        2
+      ],
+      "events_logged": [
+        {
+          "name": "coffee",
+          "kind": "meal",
+          "status": "done",
+          "date": "2026-10-01"
+        },
+        {
+          "name": "coffee",
+          "kind": "meal",
+          "status": "done",
+          "date": "2026-10-02"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G4-good-7",
+    "before": {
+      "numbers": [
+        1
+      ]
+    },
+    "after": {
+      "numbers": [
+        1
+      ],
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G6-good-0",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G6-good-1",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G6-good-2",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G6-good-3",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G6-good-4",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G6-good-5",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G6-good-6",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "G6-good-7",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "r1-good-01",
+    "before": {},
+    "after": {
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "r1-good-10",
+    "before": {
+      "numbers": [
+        4,
+        1.5
+      ]
+    },
+    "after": {
+      "numbers": [
+        4,
+        1.5
+      ],
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-02"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-03"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-04"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  },
+  {
+    "id": "r1-good-11",
+    "before": {
+      "numbers": [
+        0.5,
+        8,
+        50
+      ]
+    },
+    "after": {
+      "numbers": [
+        0.5,
+        8,
+        50
+      ],
+      "events_logged": [
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-01"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-02"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-03"
+        },
+        {
+          "name": "note",
+          "kind": "life",
+          "status": "done",
+          "date": "2026-10-04"
+        }
+      ],
+      "ratings_recorded": []
+    }
+  }
+]

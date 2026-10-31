@@ -259,6 +259,9 @@ class LLMCall(Identity, Created, Base):
     attempt: Mapped[int]
     input_tokens: Mapped[int]
     output_tokens: Mapped[int]
+    reserved_input_tokens: Mapped[int] = mapped_column(server_default="0")
+    reserved_output_tokens: Mapped[int] = mapped_column(server_default="0")
+    reserved_cost_usd: Mapped[float | None]
     latency_ms: Mapped[float]
     cost_usd: Mapped[float | None]
     status: Mapped[str]

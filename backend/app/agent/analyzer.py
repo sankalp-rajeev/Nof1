@@ -1,5 +1,7 @@
 """One typed perception step; mutations are owned by deterministic application code."""
 
+import json
+import re
 from typing import Literal, Self
 
 from pydantic import Field, model_validator
@@ -8,6 +10,7 @@ from app.agent.llm.base import CallContext, LLMMessage
 from app.agent.llm.router import LLMRouter
 from app.agent.llm.structured import StructuredResult, generate_structured
 from app.config import MAX_EVENT_NAME_LENGTH, MAX_EXTRACTED_EVENTS
+from app.domain.normalize import normalize
 from app.domain.schemas import Direction, DomainModel, Kind, Rating
 
 Intent = Literal["checkin", "ask_data", "experiment", "medical_ask", "chitchat"]
@@ -65,6 +68,31 @@ class TurnAnalysis(DomainModel):
 def analyze(
     router: LLMRouter, messages: tuple[LLMMessage, ...], *, ctx: CallContext
 ) -> StructuredResult[TurnAnalysis]:
+    payload = json.loads(
+        next(message.content for message in reversed(messages) if message.role == "user")
+    )
+    current = str(payload.get("user_text", ""))
+    tracking = payload.get("tracking", {})
+    tracked = {normalize(row["name"]).canonical for row in tracking.get("outcomes", [])}
+    reported_numbers = {
+        float(value) for value in re.findall(r"(?<![\w.])-?\d+(?:\.\d+)?(?![\w.])", current)
+    }
+
+    def grounded(value: TurnAnalysis) -> None:
+        if any(
+            r.value not in reported_numbers
+            for r in value.ratings
+            if normalize(r.outcome).canonical in tracked
+        ):
+            raise ValueError("Ratings require explicit numeric evidence in the current message")
+        if any(e.severity is not None and e.severity not in reported_numbers for e in value.events):
+            raise ValueError("Severity requires explicit numeric evidence in the current message")
+
     return generate_structured(
-        router, messages, schema=TurnAnalysis, ctx=ctx, max_tokens=router.settings.max_output_tokens
+        router,
+        messages,
+        schema=TurnAnalysis,
+        ctx=ctx,
+        max_tokens=router.settings.max_output_tokens,
+        validate=grounded,
     )

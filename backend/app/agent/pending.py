@@ -12,7 +12,7 @@ from app.agent.progress import Progress
 from app.agent.tools.registry import LogEventsArgs, ToolRegistry
 from app.db import models as m
 from app.db.repos import Repository
-from app.domain.normalize import normalize
+from app.domain.normalize import load_aliases, normalize
 from app.domain.schemas import (
     ConfirmExperiment,
     ConfirmTrack,
@@ -30,6 +30,29 @@ from app.domain.schemas import (
 YES = frozenset({"yes", "y", "yeah", "yep", "sure"})
 NO = frozenset({"no", "n", "nope"})
 SKIP = frozenset({"skip", "none"})
+
+
+def checklist_answer_supported(yes: list[str], none: bool, current_text: str) -> bool:
+    """A pending checklist is not evidence: require this turn to report its answer."""
+    text = current_text.casefold().replace("’", "'")
+    if none:
+        return bool(
+            re.search(
+                r"\b(?:none|neither|nothing|no exposures|(?:didn't|did not|haven't) "
+                r"(?:take|have|use|do|had|taken) any)\b",
+                text,
+            )
+        )
+    if not yes:
+        return False
+    for name in yes:
+        canonical = normalize(name).canonical
+        names = {canonical} | {
+            alias.alias for alias in load_aliases() if alias.canonical == canonical
+        }
+        if not any(re.search(r"\b" + re.escape(alias) + r"\b", text) for alias in names):
+            return False
+    return True
 
 
 def record_checklist(

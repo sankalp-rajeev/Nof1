@@ -29,13 +29,16 @@ def run_readonly_loop(
     router: LLMRouter, tools: ToolRegistry, context: Context, ctx: CallContext
 ) -> LoopResult:
     payload = deepcopy(context.payload)
+    payload.pop("history", None)
     descriptions: list[JsonValue] = []
     descriptions.extend(tools.descriptions())
     payload["tools"] = descriptions
     results: list[dict[str, JsonValue]] = []
     errors = 0
     for _ in range(TOOL_CALL_LIMIT):
-        fitted = ContextBuilder._fit(payload, "composer_answer", PATH_CONTEXT_TOKENS)
+        fitted = ContextBuilder._fit(
+            payload, "composer_answer", PATH_CONTEXT_TOKENS, facts_only=True
+        )
         decision = generate_structured(
             router,
             fitted.messages,
@@ -57,7 +60,7 @@ def run_readonly_loop(
     values = []
     values.extend(results)
     payload["tool_results"] = values
-    fitted = ContextBuilder._fit(payload, "composer_answer", PATH_CONTEXT_TOKENS)
+    fitted = ContextBuilder._fit(payload, "composer_answer", PATH_CONTEXT_TOKENS, facts_only=True)
     compact = fitted.payload["tool_results"]
     assert isinstance(compact, list)
     return LoopResult([row for row in compact if isinstance(row, dict)], len(results))

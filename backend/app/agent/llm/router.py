@@ -22,6 +22,7 @@ from app.agent.llm.base import (
     ProviderError,
 )
 from app.agent.llm.cost import CostTracker, PriceBook, estimated_tokens
+from app.agent.llm.diagnostics import safe_error
 from app.agent.llm.gemini import GeminiClient
 from app.agent.llm.openai_compat import OpenAICompatClient
 from app.agent.prompts.loader import load_prompt
@@ -178,7 +179,14 @@ class LLMRouter:
                         ctx=ctx,
                     )
                 except Exception as error:
-                    code = error.code if isinstance(error, ProviderError) else "client_error"
+                    code = safe_error(
+                        error,
+                        messages,
+                        (
+                            self.settings.gemini_api_key.get_secret_value(),
+                            self.settings.deepseek_api_key.get_secret_value(),
+                        ),
+                    )
                     with self.store.transaction() as tx:
                         tx.put(
                             row.model_copy(
@@ -208,6 +216,9 @@ class LLMRouter:
                             update={
                                 "input_tokens": response.input_tokens,
                                 "output_tokens": response.output_tokens,
+                                "reserved_input_tokens": 0,
+                                "reserved_output_tokens": 0,
+                                "reserved_cost_usd": None,
                                 "latency_ms": (monotonic() - started) * 1000,
                                 "cost_usd": cost,
                                 "status": "ok",

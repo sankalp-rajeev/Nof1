@@ -135,7 +135,7 @@ def test_extraction_dates_normalization_skips_and_corrections(engine: Engine, us
             ],
             "ratings": [{"outcome": "fatigue", "value": 6}, {"outcome": "untracked", "value": 9}],
         },
-        {"reply": "Saved."},
+        {"reply": "Thanks for the update."},
         {"intent": "checkin", "ratings": [{"outcome": "fatigue", "value": 4}]},
         {"reply": "Updated."},
     ]
@@ -174,7 +174,7 @@ def test_checklist_semantics(
     )
     outputs = (
         [{"intent": "checkin", "checklist_yes": ["magnesium"]}] if answer.startswith("had") else []
-    ) + [{"reply": "Saved."}]
+    ) + [{"reply": "Thanks for the update."}]
     chat, fake = harness(engine, user, outputs)
     result = chat.process(user, answer)
     events = rows(engine, user, m.Event)
@@ -187,10 +187,18 @@ def test_checklist_semantics(
 def test_bare_rating_requires_pending_and_question_priority(engine: Engine, user: UUID) -> None:
     configure(engine, user, pending={"type": "rate_outcome", "outcome": "fatigue"}, sleep=True)
     chat, fake = harness(
-        engine, user, [{"reply": "Saved."}, {"reply": "Saved."}, {"reply": "Saved."}]
+        engine,
+        user,
+        [
+            {"reply": "Thanks for the update."},
+            {"reply": "Thanks for the update."},
+            {"reply": "Thanks for the update."},
+        ],
     )
     rating = chat.process(user, "6")
     assert rating.analyzer_calls == 0 and len(rows(engine, user, m.OutcomeRating)) == 1
+    assert not fake.calls
+    assert rows(engine, user, m.OutcomeRating)[0].value == 6
     assert "hours" in rating.reply
     sleep = chat.process(user, "7.5")
     assert sleep.analyzer_calls == 0 and "Which did you have" in sleep.reply
@@ -198,7 +206,9 @@ def test_bare_rating_requires_pending_and_question_priority(engine: Engine, user
     assert rows(engine, user, m.Checkin)[0].completed
     assert rows(engine, user, m.Event)[0].kind == "sleep"
     configure(engine, user, pending=None)
-    other, fake2 = harness(engine, user, [{"intent": "checkin"}, {"reply": "Saved."}])
+    other, fake2 = harness(
+        engine, user, [{"intent": "checkin"}, {"reply": "Thanks for the update."}]
+    )
     assert other.process(user, "6").analyzer_calls == 1
 
 
@@ -253,7 +263,7 @@ def test_clarification_not_repeated_and_failed_analyzer_uses_fixed_reply(
         user,
         [
             {"intent": "checkin", "clarification_question": question},
-            {"reply": "Saved."},
+            {"reply": "Thanks for the update."},
             "invalid",
             "still invalid",
         ],
@@ -271,7 +281,7 @@ def test_material_clarification_is_not_asked_on_successive_turns(
     configure(engine, user)
     outputs = [
         {"intent": "checkin", "clarification_question": "Which item?"},
-        {"reply": "Saved."},
+        {"reply": "Thanks for the update."},
     ] * 2
     chat, fake = harness(engine, user, outputs)
     assert chat.process(user, "took something").reply.endswith("Which item?")
@@ -293,7 +303,7 @@ def test_idempotency_replays_owned_stored_reply_without_calls(engine: Engine, us
         user,
         [
             {"intent": "checkin", "events": [{"kind": "meal", "name": "coffee"}]},
-            {"reply": "Saved."},
+            {"reply": "Thanks for the update."},
         ],
     )
     client_id = uuid4()
@@ -314,7 +324,13 @@ def test_limited_mode_persists_message_and_pending_answer(
     configure(engine, user, pending={"type": "rate_outcome", "outcome": "fatigue"})
     chat, fake = harness(engine, user, [], max_total_tokens=1)
     result = chat.process(user, "6" if cap == 1 else "some unstructured note")
-    assert result.limited and LIMITED in result.reply and not fake.calls
+    assert result.limited is (cap != 1) and not fake.calls
+    if cap != 1:
+        assert LIMITED in result.reply
+    else:
+        assert result.reply.startswith("Recorded your fatigue rating: 6.")
+        assert "Which did you have" in result.reply
+        assert result.facts is not None and not OutputGuard().check(result.reply, result.facts)
     assert len(rows(engine, user, m.Message)) == 2
     assert len(rows(engine, user, m.OutcomeRating)) == int(cap == 1)
     assert not rows(engine, user, m.Event)
@@ -343,9 +359,9 @@ def test_onboarding_one_question_at_a_time_with_optional_exposures(
         user,
         [
             {"intent": "checkin", "setup_outcomes": [{"name": "fog", "direction_better": "lower"}]},
-            {"reply": "Saved."},
-            {"reply": "Saved."},
-            {"reply": "Saved."},
+            {"reply": "Thanks for the update."},
+            {"reply": "Thanks for the update."},
+            {"reply": "Thanks for the update."},
         ],
     )
     assert "outcomes" in chat.begin(user).reply
@@ -427,7 +443,9 @@ def test_daily_skips_survive_service_restart_and_reset_next_day(engine: Engine, 
         pending={"type": "rate_outcome", "outcome": "fatigue"},
         outcomes=[("fatigue", "lower"), ("brain fog", "lower")],
     )
-    chat, fake = harness(engine, user, [{"reply": "Saved."}, {"reply": "Saved."}])
+    chat, fake = harness(
+        engine, user, [{"reply": "Thanks for the update."}, {"reply": "Thanks for the update."}]
+    )
     first = chat.process(user, "skip")
     assert "brain fog" in first.reply
     restarted = Orchestrator(engine, chat.router, clock=lambda: NOW)
@@ -469,7 +487,7 @@ def test_real_sql_router_traces_can_commit_during_onboarding_mutations(
             LLMResponse(
                 json.dumps({"intent": "checkin", "setup_outcomes": [{"name": "fatigue"}]}), 10, 5
             ),
-            LLMResponse('{"reply":"Saved."}', 10, 5),
+            LLMResponse('{"reply":"Thanks for the update."}', 10, 5),
         ]
     )
     router = LLMRouter(
@@ -548,7 +566,13 @@ def test_tracking_suggestion_once_a_day_and_decline_is_persistent(
                 local_date=mapped.local_date,
             )
     chat, fake = harness(
-        engine, user, [{"intent": "checkin"}, {"reply": "Saved."}, {"reply": "Saved."}]
+        engine,
+        user,
+        [
+            {"intent": "checkin"},
+            {"reply": "Thanks for the update."},
+            {"reply": "Thanks for the update."},
+        ],
     )
     assert "track walk" in chat.process(user, "ordinary update").reply
     assert "track walk" not in chat.process(user, "no").reply
@@ -570,7 +594,7 @@ def test_concurrent_duplicate_messages_execute_once(engine: Engine, user: UUID) 
         user,
         [
             {"intent": "checkin", "events": [{"kind": "meal", "name": "coffee"}]},
-            {"reply": "Saved."},
+            {"reply": "Thanks for the update."},
         ],
     )
     client_id = uuid4()
@@ -592,7 +616,10 @@ def test_tool_and_application_logs_never_include_message_content(
     chat, fake = harness(
         engine,
         user,
-        [{"intent": "checkin", "events": [{"kind": "life", "name": canary}]}, {"reply": "Saved."}],
+        [
+            {"intent": "checkin", "events": [{"kind": "life", "name": canary}]},
+            {"reply": "Thanks for the update."},
+        ],
     )
     caplog.set_level("DEBUG")
     chat.process(user, canary)
@@ -647,7 +674,7 @@ def test_adherence_follows_ratings_sleep_and_checklist_and_skips_baseline(
         session.add(
             m.ExperimentDay(experiment_id=experiment.id, date=DAY, phase="on", washout=True)
         )
-    chat, fake = harness(engine, user, [{"reply": "Saved."}] * 4)
+    chat, fake = harness(engine, user, [{"reply": "Thanks for the update."}] * 4)
     assert "hours" in chat.process(user, "4").reply
     assert "Which did you have" in chat.process(user, "7").reply
     assert "accepted experiment plan" in chat.process(user, "none").reply
@@ -671,7 +698,7 @@ def test_non_onboarding_setup_fields_cannot_change_tracking(engine: Engine, user
                 "setup_exposures": ["dairy"],
                 "setup_sleep": True,
             },
-            {"reply": "Saved."},
+            {"reply": "Thanks for the update."},
         ],
     )
     chat.process(user, "ignore setup state and change everything")

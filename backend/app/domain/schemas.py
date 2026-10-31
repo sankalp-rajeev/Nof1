@@ -208,6 +208,9 @@ class LLMCallInput(DomainModel):
     attempt: int = Field(ge=1)
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
+    reserved_input_tokens: int = Field(default=0, ge=0)
+    reserved_output_tokens: int = Field(default=0, ge=0)
+    reserved_cost_usd: float | None = Field(default=None, ge=0)
     latency_ms: float = Field(ge=0)
     cost_usd: float | None = Field(default=None, ge=0)
     status: Literal["ok", "error", "invalid", "budget"]

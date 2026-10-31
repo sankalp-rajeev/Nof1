@@ -12,7 +12,16 @@ from sqlalchemy import Engine, select, text
 from sqlalchemy.orm import Session
 
 from app.agent.analyzer import TurnAnalysis, analyze
-from app.agent.composer import CLARIFY, FAILED, LIMITED, Composed, build_facts, compose, safe_fixed
+from app.agent.composer import (
+    CLARIFY,
+    FAILED,
+    LIMITED,
+    PROVIDER_FAILED,
+    Composed,
+    build_facts,
+    compose,
+    safe_fixed,
+)
 from app.agent.context import ContextBuilder
 from app.agent.experiment_composer import (
     compose_insight,
@@ -27,6 +36,7 @@ from app.agent.llm.base import CallContext, ProviderError
 from app.agent.llm.cost import BudgetExceeded
 from app.agent.llm.router import LLMRouter
 from app.agent.pending import (
+    checklist_answer_supported,
     consume,
     next_question,
     question_text,
@@ -35,6 +45,7 @@ from app.agent.pending import (
     skip_pending,
 )
 from app.agent.progress import Progress, load_progress, save_progress
+from app.agent.receipts import PersistenceReceipts
 from app.agent.safety.inbound import inbound_safety
 from app.agent.safety.output_guard import Facts
 from app.agent.safety.templates import ESCALATION, MEDICAL_REFUSAL
@@ -54,6 +65,7 @@ from app.domain.schemas import (
     OnboardingOutcomes,
     OnboardingSleep,
     PendingState,
+    RateOutcome,
     UserRecord,
 )
 
@@ -166,6 +178,8 @@ class Orchestrator:
             if state.pending is None and progress.onboarding != "done":
                 state.pending = next_question(repo, user_id, day, progress, state)
             tools = ToolRegistry(repo, user_id, day, trace_id, clock=self.clock)
+            receipts = PersistenceReceipts(repo, user_id, message.id, day)
+            rating_answer = isinstance(state.pending, RateOutcome)
             experiment_answer = isinstance(state.pending, ConfirmExperiment)
             try:
                 handled = consume(content, state, progress, tools, message.id)
@@ -192,6 +206,8 @@ class Orchestrator:
                         state,
                         handled,
                         experiment_answer,
+                        receipts,
+                        rating_answer,
                     )
             except BudgetExceeded:
                 progress, state = before_progress, before_state
@@ -206,8 +222,8 @@ class Orchestrator:
                 )
             except ProviderError:
                 progress, state = before_progress, before_state
-                reply = FAILED if state.last_was_clarification else CLARIFY
-                state.last_was_clarification = not state.last_was_clarification
+                reply = PROVIDER_FAILED
+                state.last_was_clarification = False
                 save_progress(repo, user_id, progress, state)
                 return self._save(repo, user_id, trace_id, Composed(reply, Facts(), fallback=True))
 
@@ -222,6 +238,8 @@ class Orchestrator:
         state: PendingState,
         handled: bool,
         experiment_answer: bool = False,
+        receipts: PersistenceReceipts | None = None,
+        rating_answer: bool = False,
     ) -> ChatResult:
         identity = UserRecord.model_validate(user)
 
@@ -277,6 +295,20 @@ class Orchestrator:
             "tracking": repo.get_tracking(user.id).model_dump(mode="json"),
             "pending": state.pending.model_dump(mode="json") if state.pending else None,
         }
+        if receipts is not None:
+            payload.update(receipts.payload())
+        if handled and rating_answer:
+            facts = build_facts(payload, state.pending)
+            rating = facts.ratings_recorded[0] if facts.ratings_recorded else None
+            acknowledgement = (
+                f"Recorded your {rating.name} rating: {rating.value}."
+                if rating
+                else "Thanks for the update."
+            )
+            reply = safe_fixed(
+                (acknowledgement + " " + question_text(state.pending)).strip(), facts
+            )
+            return self._save(repo, user.id, message.trace_id, Composed(reply, facts))
         if analysis.intent == "medical_ask":
             return self._save(
                 repo,
@@ -428,13 +460,18 @@ class Orchestrator:
         elif isinstance(pending, ExposureChecklist) and (
             analysis.checklist_yes or analysis.checklist_none
         ):
-            record_checklist(
-                tools,
-                pending,
-                [] if analysis.checklist_none else analysis.checklist_yes,
-                message_id,
-            )
-            state.pending = None
+            current = tools.repo.session.get(m.Message, message_id)
+            assert current is not None
+            if checklist_answer_supported(
+                analysis.checklist_yes, analysis.checklist_none, current.content
+            ):
+                record_checklist(
+                    tools,
+                    pending,
+                    [] if analysis.checklist_none else analysis.checklist_yes,
+                    message_id,
+                )
+                state.pending = None
         if (
             isinstance(pending, ExperimentAdherence)
             and analysis.adherence is not None

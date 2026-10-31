@@ -1,37 +1,58 @@
-"""G1-G6 checks over immutable facts; no text can redefine the guard's rules."""
+"""G1-G7 checks over immutable facts; no text can redefine the guard's rules."""
 
 import re
 from collections.abc import Mapping
-from datetime import date
+from datetime import date as LocalDate
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from app.agent.safety.config import (
+    ACKNOWLEDGEMENT_WORDS,
     CHECKIN_WORD_LIMIT,
     DIRECTIVE_WINDOW,
     MEDICINE_WORDS,
     NUMBER_WORDS,
 )
 from app.config import ROOT
-from app.domain.normalize import load_aliases
+from app.domain.normalize import load_aliases, normalize
+from app.domain.schemas import Kind, Rating
 
 DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 NUMERAL_RE = re.compile(r"[-+]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)%?")
 PHASE_RE = re.compile(r"\b(?:BASELINE|ON|OFF)\b")
 
 
+class EventReceipt(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    name: str = Field(min_length=1)
+    kind: Kind = "life"
+    status: Literal["done", "skipped"]
+    date: LocalDate | None = None
+    value: float | None = Field(default=None, allow_inf_nan=False)
+    severity: Rating | None = None
+
+
+class RatingReceipt(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    name: str = Field(min_length=1)
+    value: Rating
+    date: LocalDate | None = None
+
+
 class Facts(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     numbers: tuple[Decimal, ...] = ()
-    dates: tuple[date, ...] = ()
+    dates: tuple[LocalDate, ...] = ()
     exposures: tuple[str, ...] = ()
     outcomes: tuple[str, ...] = ()
     kind: Literal["checkin", "insight", "verdict", "answer", "experiment", "protocol"] = "checkin"
     phase: Literal["baseline", "on", "off"] | None = None
     washout: bool = False
     rating_scale: bool = False
+    events_logged: tuple[EventReceipt, ...] = ()
+    ratings_recorded: tuple[RatingReceipt, ...] = ()
     details: dict[str, JsonValue] = {}
 
     @classmethod
@@ -39,7 +60,7 @@ class Facts(BaseModel):
         cls, payload: Mapping[str, JsonValue], *, rating_scale: bool = False
     ) -> "Facts":
         numbers: list[Decimal] = []
-        dates: list[date] = []
+        dates: list[LocalDate] = []
 
         def visit(value: JsonValue) -> None:
             if isinstance(value, bool):
@@ -48,7 +69,7 @@ class Facts(BaseModel):
                 numbers.append(Decimal(str(value)))
             elif isinstance(value, str) and DATE_RE.fullmatch(value):
                 try:
-                    dates.append(date.fromisoformat(value))
+                    dates.append(LocalDate.fromisoformat(value))
                 except ValueError:
                     pass  # Invalid date-like names never authorize a rendered date.
             elif isinstance(value, list):
@@ -62,10 +83,23 @@ class Facts(BaseModel):
             visit(value)
         if rating_scale:
             numbers.extend((Decimal(0), Decimal(10)))
+
+        def receipts(key: str) -> tuple[dict[str, JsonValue], ...]:
+            value = payload.get(key, [])
+            if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
+                raise ValueError("Persistence receipts must be structured lists")
+            return tuple(item for item in value if isinstance(item, dict))
+
         return cls(
             numbers=tuple(numbers),
             dates=tuple(dates),
             rating_scale=rating_scale,
+            events_logged=tuple(
+                EventReceipt.model_validate(row) for row in receipts("events_logged")
+            ),
+            ratings_recorded=tuple(
+                RatingReceipt.model_validate(row) for row in receipts("ratings_recorded")
+            ),
             details=dict(payload),
         )
 
@@ -90,7 +124,7 @@ class OutputGuard:
     def check(self, text: str, facts: Facts) -> tuple[str, ...]:
         violations: list[str] = []
         lowered = text.casefold().replace("’", "'")
-        sentences = re.split(r"(?<!\d)[.!?]+\s*|(?<=\d)[!?]+\s*", lowered)
+        sentences = re.split(r"[!?]+\s*|(?<!\d)\.+\s*|(?<=\d)\.(?!\d)\s*", lowered)
         non_refusal = re.sub(
             r"\bi\s+(?:cannot|can't|can not|am unable to|do not|don't)\s+diagnose\b", "", lowered
         )
@@ -111,7 +145,87 @@ class OutputGuard:
             violations.append("G5")
         if facts.kind == "checkin" and len(text.split()) > CHECKIN_WORD_LIMIT:
             violations.append("G6")
+        if any(self._unsupported_save(sentence, facts) for sentence in sentences):
+            violations.append("G7")
         return tuple(violations)
+
+    def _unsupported_save(self, sentence: str, facts: Facts) -> bool:
+        return any(
+            self._unsupported_clause(clause, facts)
+            for clause in re.split(
+                r"[;,]|\bbut\b|\band\s+(?=(?:i|we|you|saved|logged|recorded|noted)\b)", sentence
+            )
+        )
+
+    def _unsupported_clause(self, sentence: str, facts: Facts) -> bool:
+        claim = re.search(
+            r"\b(?:saved|logged|recorded|noted)\b",
+            sentence,
+        )
+        if not claim:
+            return False
+        # Negation must qualify this claim, rather than any other part of the reply.
+        if re.search(
+            r"\b(?:not|never|couldn't|cannot|can't|didn't|haven't|hasn't)\s+(?:been\s+)?$",
+            sentence[: claim.start()],
+        ):
+            return False
+        if re.search(
+            r"\bno\s+(?:matching\s+)?(?:\w+\s+){0,3}"
+            r"(?:entries|events|episodes|records|ratings|symptoms|intake|notes|data)"
+            r"(?:\s+(?:were|was|have been|has been))?\s*$",
+            sentence[: claim.start()],
+        ):
+            return False
+        if not facts.events_logged and not facts.ratings_recorded:
+            return True
+        is_rating = bool(re.search(r"\b(?:ratings?|scores?)\b", sentence))
+        is_event = bool(
+            re.search(
+                r"\b(?:notes?|events?|symptoms?|episodes?|intakes?|doses?|taken|consumed|skipped)\b",
+                sentence,
+            )
+        )
+        if is_rating and not facts.ratings_recorded:
+            return True
+        if is_event and not facts.events_logged:
+            return True
+        event_names = {normalize(row.name).canonical for row in facts.events_logged}
+        rating_names = {normalize(row.name).canonical for row in facts.ratings_recorded}
+        mentioned = {
+            name
+            for name in self.names
+            | set(facts.exposures)
+            | set(facts.outcomes)
+            | event_names
+            | rating_names
+            if re.search(r"\b" + re.escape(name) + r"\b", sentence)
+        }
+        for name in mentioned:
+            normalized = normalize(name)
+            canonical = normalized.canonical
+            exposure = normalized.category in {"supplement", "otc_med", "rx_med", "food", "habit"}
+            if is_rating and canonical not in rating_names:
+                return True
+            if (is_event or exposure) and canonical not in event_names:
+                return True
+            if canonical not in event_names | rating_names:
+                return True
+            if (
+                re.search(r"\b(?:intake|taken|consumed|had)\b", sentence)
+                and "skipped" not in sentence
+            ):
+                if not any(
+                    normalize(row.name).canonical == canonical and row.status == "done"
+                    for row in facts.events_logged
+                ):
+                    return True
+        # Unrecognized claimed names cannot borrow a receipt for another item.
+        remaining = DATE_RE.sub("", sentence)
+        for name in sorted(mentioned, key=len, reverse=True):
+            remaining = re.sub(r"\b" + re.escape(name) + r"\b", "", remaining)
+        words = set(re.findall(r"[a-z]+", remaining.replace("'", "")))
+        return bool(words - ACKNOWLEDGEMENT_WORDS - set(NUMBER_WORDS))
 
     @staticmethod
     def _causal(sentence: str, facts: Facts, names: set[str]) -> bool:
@@ -188,7 +302,7 @@ class OutputGuard:
         dates = set(facts.dates)
         for match in DATE_RE.finditer(text):
             try:
-                if date.fromisoformat(match.group()) not in dates:
+                if LocalDate.fromisoformat(match.group()) not in dates:
                     return True
             except ValueError:
                 return True

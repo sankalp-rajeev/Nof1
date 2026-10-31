@@ -209,7 +209,7 @@ ollama:*: {input: 0.0, output: 0.0}
 | patterns | id, user_id fk, run_id uuid, pattern_key text (`exposure|outcome|lag`), exposure, outcome, lag_days int, effect float, p_raw float, p_adj float, tier ('weak','moderate'), n_pairs, n_exposed, n_unexposed, perm_mode ('exact','mc'), n_valid, confounder text null, window_start date, window_end date, data_points jsonb, surfaced_at null, computed_at |
 | experiments | id, user_id fk, pattern_id fk null, exposure, outcome, status, end_reason text null, protocol jsonb, seed int, created_at, accepted_at null, started_on date null, ended_on date null, verdict jsonb null |
 | experiment_days | id, experiment_id fk, date, phase ('baseline','on','off'), washout bool, adherence bool null, updated_at, unique(experiment_id, date) |
-| llm_calls | id, trace_id, user_id null, purpose, provider, model, prompt_version, data_class, attempt int, input_tokens, output_tokens, latency_ms, cost_usd null, status ('ok','error','invalid','budget'), error text null, created_at |
+| llm_calls | id, trace_id, user_id null, purpose, provider, model, prompt_version, data_class, attempt int, input_tokens, output_tokens, reserved_input_tokens int default 0, reserved_output_tokens int default 0, reserved_cost_usd null, latency_ms, cost_usd null, status ('ok','error','invalid','budget'), error text null, created_at |
 | safety_events | id, user_id, message_id, category, source ('rule','llm'), created_at |
 
 Constraints: severity only when kind = 'symptom'. `status = 'skipped'` is not allowed for kind `symptom` or `sleep`. Deleting a user cascades to every table above (`DELETE /api/me`).
@@ -390,6 +390,9 @@ user message (+ optional client_msg_id)
        yes/no words with pending confirm_* or experiment_adherence -> apply
        "skip" / "none" with any pending question               -> apply
      then apply, go to [6] with intent=checkin. 0 analyzer calls.
+     Exception: a consumed bare rating returns a fixed acknowledgement plus the next F2 question,
+     with 0 LLM calls. The acknowledgement uses only the persisted rating receipt in FACTS;
+     every rendered number comes from FACTS. It remains available with no LLM budget.
  [3] BaseContext (deterministic): system prompt, last 6 messages, pending, tracked outcomes and exposures,
      top 20 logged names, today's date and experiment phase label if any.
  [4] TurnAnalyzer (LLM, structured)
@@ -404,8 +407,15 @@ user message (+ optional client_msg_id)
        experiment  -> ExperimentManager -> composer_experiment
        medical_ask -> fixed refusal template (events from [5] are kept)
        chitchat    -> brief reply, then the next open question if any
- [7] ResponseComposer (LLM) given a FACTS payload only
- [8] OutputGuard (G1..G6): pass | regenerate once with violations | fallback template from FACTS
+ [7] ResponseComposer (LLM) given a FACTS payload only, never chat history or pending/tracking prompts.
+     events_logged and ratings_recorded are typed, named receipts read from successful turn mutations.
+     Fixed rating acknowledgements bypass this LLM step; code selects and appends the next question.
+ [8] OutputGuard (G1..G7): pass | regenerate once with violations | fallback template from FACTS
+     G7: saved/logged/recorded/noted acknowledgements require receipts matching claim type and name.
+     A skipped exposure never supports a taken/intake claim. Explicit absence of a matching record
+     is not a save acknowledgement. Provider errors use a separate fixed retry-later template,
+     never a clarification/rephrase request or last_was_clarification flag; failed calls trace 0 actual
+     tokens while conservative budget reservations remain separate from actual usage.
  [9] Append footer where required, persist assistant message, tracing, mark client_msg_id processed
 ```
 
@@ -513,6 +523,7 @@ Files in `agent/prompts/` with frontmatter `version: N`: `turn_analyzer.md`, `co
 - G4 number fidelity: every numeral (integer or decimal, including grouped thousands, with or without %), every date, and every number word ("two" to "twenty", compounds "twenty-one" to "twenty-nine", "dozen", "half", and "one" when followed by day, week, point, time, or block) must appear in `FACTS.numbers` or `FACTS.dates`. Compound words and grouped numerals are checked as whole values, never authorized by their individual parts. Mixed allowed/invented values must fail, including percentages; 0.5 does not implicitly authorize the numeral 50%. Code builds `FACTS.numbers` from every numeric fact and adds 0 and 10 only when the payload includes the rating scale.
 - G5 schedule fidelity: experiment instructions contain exactly today's scheduled phase label (BASELINE, ON, or OFF) and no other phase label. BASELINE text must say to keep the usual routine. A washout day keeps its ON or OFF label and says the day is not counted.
 - G6 length: check-in replies at most 120 words.
+- G7 persistence acknowledgements: saved/logged/recorded/noted claims require typed, named events_logged or ratings_recorded receipts from successful turn mutations. Match the claim type and canonical/alias name; a rating receipt cannot support an exposure claim, and skipped cannot support taken/intake. Explicitly saying no matching record exists is not a save acknowledgement.
 - Footer: code appends a fixed non-medical-advice sentence to insight and verdict messages after the guard (not LLM generated).
 
 Blind-probe clarifications: G1 also blocks diagnostic assertion frames when a condition name is absent from the vocabulary; an explicit first-person refusal or inability to diagnose is allowed, without exempting other claims. G2 includes soft dose adjustments and supplement classes. G3 includes inflections of worsen, aggravate, reduce, increase, decrease, improve, and relieve; only the specified past-tense verdict wording is whitelisted. G4 includes frequency words such as twice and thrice. G5 constrains current experiment instructions; a verdict with no current scheduled phase may compare historical ON/OFF labels. P6's code-selected protocol kind similarly permits future calendar labels when there is no current phase; it never exempts daily instructions with a scheduled phase.
@@ -530,11 +541,11 @@ The source of truth is the structured event store. LLM-readable memory is derive
 - **Router**: `LLMRouter.get(purpose)` returns a client from env (`provider:model`). Clients implement `generate(messages, schema?, max_tokens, temperature, ctx: CallContext)` and return text plus usage. `CallContext = {purpose, data_class, user_id, trace_id}`.
 - **Clients**: Gemini via `google-genai`, using structured output where available. An OpenAI-compatible client for Ollama and DeepSeek. `FakeLLMClient` for tests (scripted outputs, record and replay by hash of purpose and input, raises if the script is exhausted).
 - **Data-class policy**: `ctx.data_class` comes from `users.data_class`. Sim and eval runs create their users with `data_class = synthetic`; every other user is `real`, including demo users. Loading demo history does not change data class. The router raises `PolicyError` if the provider is `deepseek` and `ctx.data_class != synthetic`. Calls without a user (eval tooling) must pass `synthetic` explicitly.
-- **Tracing**: every attempt, including retries and regenerations, writes an `llm_calls` row.
+- **Tracing**: every attempt, including retries and regenerations, writes an `llm_calls` row. Failed calls record zero actual tokens; separate reserved_input_tokens, reserved_output_tokens and reserved_cost_usd retain conservative budget reservations until successful usage is known. Provider diagnostics include exception class, HTTP code, and Google status/message, sanitized of request text and credentials and truncated to 300 characters.
 - **Budgets** (`CostTracker`, checked before every attempt using the estimated input tokens plus `MAX_OUTPUT_TOKENS`):
   - Scope: for CLI runs (sim, eval-live, eval-final), the whole process. For the web app, the current UTC day across all users, computed from `llm_calls`.
-  - `MAX_SPEND_USD` caps summed `cost_usd`; calls with a null price add nothing.
-  - `MAX_TOTAL_TOKENS` caps summed input plus output tokens for all calls, priced or not.
+  - `MAX_SPEND_USD` caps actual `cost_usd` plus unresolved `reserved_cost_usd`; calls with a null price add nothing.
+  - `MAX_TOTAL_TOKENS` caps actual input/output plus unresolved reserved input/output tokens for all calls, priced or not.
   - `MAX_USER_DAILY_LLM_CALLS` caps per-user calls per local day (web app only).
   - Exhaustion raises `BudgetExceeded`. In the app, the orchestrator enters limited mode: it persists the message, applies deterministic pending consumption ([2]), and replies with a fixed template; nothing is extracted. In CLI runs, it stops and writes a partial report marked `aborted: budget`.
 - **Timeouts and retries**: `LLM_TIMEOUT_S`; tenacity retries (2) on 429 and 5xx only.

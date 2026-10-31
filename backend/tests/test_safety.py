@@ -114,7 +114,7 @@ def test_fixed_templates_only_render_numbers_from_facts() -> None:
 @pytest.mark.parametrize(
     "texts,fallback",
     [
-        (["You have diabetes.", "Saved your note."], False),
+        (["You have diabetes.", "Saved your note."], True),
         (["You have diabetes.", "Take 20 mg of magnesium."], True),
     ],
 )

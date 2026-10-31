@@ -75,6 +75,8 @@ class ContextBuilder:
             value = payload[key]
             if isinstance(value, list):
                 payload[key] = list(value)
+        # Perception already used the history; read-only planning and narration do not.
+        payload.pop("history", None)
         if intent == "ask_data":
             timeline = self.tools.query_timeline(
                 TimelineArgs(
@@ -90,13 +92,16 @@ class ContextBuilder:
         return self._fit(payload, "composer_answer", PATH_CONTEXT_TOKENS)
 
     @staticmethod
-    def _fit(payload: dict[str, JsonValue], prompt_name: str, budget: int) -> Context:
+    def _fit(
+        payload: dict[str, JsonValue], prompt_name: str, budget: int, *, facts_only: bool = False
+    ) -> Context:
         prompt = load_prompt(prompt_name)
 
+        def messages() -> tuple[LLMMessage, ...]:
+            return prompt.messages({"FACTS": payload} if facts_only else payload)
+
         def size() -> int:
-            return math.ceil(
-                sum(len(m.role) + len(m.content) for m in prompt.messages(payload)) / 4
-            )
+            return math.ceil(sum(len(m.role) + len(m.content) for m in messages()) / 4)
 
         for key in ("history", "top_names", "timeline"):
             items = payload.get(key)
@@ -131,4 +136,4 @@ class ContextBuilder:
                         results[max(candidates)[1]] = {"truncated": True}
                     else:
                         raise ValueError("Required workflow context exceeds its token budget")
-        return Context(payload, prompt.messages(payload), size())
+        return Context(payload, messages(), size())

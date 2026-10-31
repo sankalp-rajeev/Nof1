@@ -72,7 +72,9 @@ def trace_metadata(engine: Engine, result: ChatResult) -> dict[str, JsonValue]:
                 "error": row.error,
                 "input_tokens": row.input_tokens,
                 "output_tokens": row.output_tokens,
-                "usage_estimated": row.status == "error",
+                "usage_estimated": False,
+                "reserved_input_tokens": row.reserved_input_tokens,
+                "reserved_output_tokens": row.reserved_output_tokens,
                 "cost_usd": row.cost_usd,
             }
             for row in rows
