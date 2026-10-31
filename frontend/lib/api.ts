@@ -8,6 +8,7 @@ function problem(value: unknown): value is ApiProblem {
   return typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" && "message" in error && typeof error.message === "string";
 }
 export async function api<T>(path: string, options: { method?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
+  if (!path.startsWith("/api/") || path.includes("\\") || /[\r\n]/.test(path)) throw new ApiError("origin", "Only local API paths are allowed.", 0);
   let response: Response;
   try {
     response = await fetch(path, { method: options.method ?? "GET", credentials: "include", headers: options.body === undefined ? undefined : { "Content-Type": "application/json" }, body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: options.signal });

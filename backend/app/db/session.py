@@ -7,6 +7,8 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
+from app.config import DB_POOL_RECYCLE_SECONDS
+
 
 def create_db_engine(url: str) -> Engine:
     parsed = make_url(url)
@@ -19,7 +21,15 @@ def create_db_engine(url: str) -> Engine:
     # appropriate for the local Docker port mapping used in development.
     if parsed.host == "localhost":
         parsed = parsed.set(host="127.0.0.1")
-    return create_engine(parsed, echo=False, hide_parameters=True, pool_pre_ping=True)
+    return create_engine(
+        parsed,
+        echo=False,
+        hide_parameters=True,
+        pool_pre_ping=True,
+        pool_recycle=DB_POOL_RECYCLE_SECONDS,
+        pool_size=3,
+        max_overflow=2,
+    )
 
 
 @contextmanager

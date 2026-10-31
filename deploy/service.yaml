@@ -1,0 +1,73 @@
+# Render non-secret environment placeholders using the command in DEPLOY.md.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ${SERVICE}
+  annotations:
+    run.googleapis.com/maxScale: '1'
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '1'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/container-dependencies: '{"frontend":["backend"]}'
+    spec:
+      serviceAccountName: ${RUNTIME_SA}
+      containerConcurrency: 8
+      timeoutSeconds: 180
+      containers:
+        - name: frontend
+          image: ${IMAGE_BASE}/frontend:${TAG}
+          ports:
+            - containerPort: 3000
+          env:
+            - name: API_INTERNAL_URL
+              value: http://127.0.0.1:8000
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
+        - name: backend
+          image: ${IMAGE_BASE}/backend:${TAG}
+          command: [uvicorn]
+          args: [app.main:app, --host, 127.0.0.1, --port, '8000', --workers, '1', --no-access-log]
+          env:
+            - name: APP_ENV
+              value: prod
+            - name: DEBUG
+              value: 'false'
+            - name: MAX_SPEND_USD
+              value: '0.50'
+            - name: MAX_USER_DAILY_LLM_CALLS
+              value: '30'
+            - name: MAX_TOTAL_TOKENS
+              value: '60000'
+            - name: FRONTEND_ORIGIN
+              value: ${FRONTEND_ORIGIN}
+            - name: LLM_ANALYZER
+              value: gemini:gemini-3.1-flash-lite
+            - name: LLM_COMPOSER
+              value: gemini:gemini-3.1-flash-lite
+            - name: LLM_NARRATOR
+              value: gemini:gemini-3.8-flash
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: nof1-gemini-key
+                  key: '1'
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nof1-database-url
+                  key: '1'
+          resources:
+            limits:
+              cpu: '1'
+              memory: 1Gi
+          startupProbe:
+            tcpSocket:
+              port: 8000
+            periodSeconds: 2
+            failureThreshold: 30

@@ -312,7 +312,7 @@ def create_app(
 
     @app.get("/api/debug/llm_calls")
     def debug_calls(request: Request) -> list[JsonValue]:
-        if not runtime.settings.debug:
+        if runtime.settings.app_env == "prod" or not runtime.settings.debug:
             raise HTTPException(404)
         with Session(runtime.engine) as session:
             return [

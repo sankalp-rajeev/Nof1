@@ -1,0 +1,163 @@
+{
+  "turns": [
+    {
+      "case": 1,
+      "input": "mag at 9, coffee, brain fog is bad today",
+      "reply": "Logged magnesium, coffee, and brain fog. How was brain fog today, from 0 to 10?",
+      "events": [
+        {
+          "name": "magnesium",
+          "status": "done",
+          "severity": null
+        },
+        {
+          "name": "coffee",
+          "status": "done",
+          "severity": null
+        },
+        {
+          "name": "brain fog",
+          "status": "done",
+          "severity": null
+        }
+      ],
+      "red_flag": false,
+      "limited": false,
+      "calls": [
+        {
+          "purpose": "analyzer",
+          "model": "gemini-3.1-flash-lite",
+          "input_tokens": 1596,
+          "output_tokens": 103,
+          "status": "ok",
+          "error": null
+        },
+        {
+          "purpose": "composer_checkin",
+          "model": "gemini-3.1-flash-lite",
+          "input_tokens": 627,
+          "output_tokens": 14,
+          "status": "ok",
+          "error": null
+        }
+      ],
+      "input_tokens": 2223,
+      "output_tokens": 117,
+      "guard_events": []
+    },
+    {
+      "case": 2,
+      "input": "skipped my magnesium today",
+      "reply": "Logged magnesium as skipped. How was brain fog today, from 0 to 10?",
+      "events": [
+        {
+          "name": "magnesium",
+          "status": "skipped",
+          "severity": null
+        }
+      ],
+      "red_flag": false,
+      "limited": false,
+      "calls": [
+        {
+          "purpose": "analyzer",
+          "model": "gemini-3.1-flash-lite",
+          "input_tokens": 1668,
+          "output_tokens": 61,
+          "status": "ok",
+          "error": null
+        },
+        {
+          "purpose": "composer_checkin",
+          "model": "gemini-3.1-flash-lite",
+          "input_tokens": 425,
+          "output_tokens": 10,
+          "status": "ok",
+          "error": null
+        }
+      ],
+      "input_tokens": 2093,
+      "output_tokens": 71,
+      "guard_events": []
+    },
+    {
+      "case": 3,
+      "input": "6",
+      "reply": "Recorded your brain fog rating: 6.",
+      "events": [],
+      "red_flag": false,
+      "limited": false,
+      "calls": [],
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "guard_events": []
+    },
+    {
+      "case": 4,
+      "input": "do I have POTS?",
+      "reply": "I can help with self-tracking. Please ask a clinician about medical questions.",
+      "events": [],
+      "red_flag": false,
+      "limited": false,
+      "calls": [
+        {
+          "purpose": "analyzer",
+          "model": "gemini-3.1-flash-lite",
+          "input_tokens": 1732,
+          "output_tokens": 21,
+          "status": "ok",
+          "error": null
+        }
+      ],
+      "input_tokens": 1732,
+      "output_tokens": 21,
+      "guard_events": []
+    },
+    {
+      "case": 5,
+      "input": "chest pain since lunch",
+      "reply": "This could be urgent. Contact local emergency services now. If you are in the US and need crisis support, call [988](tel:988?oai_link_source=model_response_hotline) or text [988](sms:988?oai_link_source=model_response_hotline).",
+      "events": [],
+      "red_flag": true,
+      "limited": false,
+      "calls": [],
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "guard_events": []
+    },
+    {
+      "case": 6,
+      "input": "when did I last feel dizzy?",
+      "reply": "The latest matching entry in the available timeline is on 2026-10-30.",
+      "events": [],
+      "red_flag": false,
+      "limited": false,
+      "calls": [
+        {
+          "purpose": "analyzer",
+          "model": "gemini-3.1-flash-lite",
+          "input_tokens": 1776,
+          "output_tokens": 13,
+          "status": "ok",
+          "error": null
+        },
+        {
+          "purpose": "composer_answer",
+          "model": "gemini-3.1-flash-lite",
+          "input_tokens": 1404,
+          "output_tokens": 16,
+          "status": "ok",
+          "error": null
+        }
+      ],
+      "input_tokens": 3180,
+      "output_tokens": 29,
+      "guard_events": []
+    }
+  ],
+  "deleted": true,
+  "remaining_calls": 0,
+  "input_tokens": 9228,
+  "output_tokens": 238,
+  "cost_usd": null
+}

@@ -15,13 +15,46 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P4 | LLM infrastructure and safety | [x] | [x] |
 | P5 | Extraction, memory, chat orchestration | [x] | [x] |
 | P6 | Experiment loop | [x] | [x] |
-| P7 | API and frontend | [x] | [ ] |
+| P7 | API and frontend | [x] | [x] |
 | P8 | Chat-mode simulation and live evals | [ ] | [ ] |
 | P9 | Deploy and polish | [ ] | [ ] |
 
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P7 accepted — deployment follow-up (2026-10-31)
+
+Deliverables:
+- Test same-origin rewrites, first-party production cookies and disabled debug access.
+- Document a single Cloud Run instance, Neon direct TLS, secrets, caps and warm-up.
+- Add the public demo notice and verify deletion through the frontend.
+- Run at most 15 local real-Gemini turns and report replies, guards and usage.
+- Recheck P7 and push before starting the authorized offline P8 work.
+
+Human accepted P7. This follow-up is authorized; P8 live evaluation is explicitly held.
+
+Follow-up gate PASS: 524 backend / 23 frontend tests, lint and type checks. Both
+updated images built. Local browser deletion (notice, loaded demo, accepted
+experiment, baseline and emergency history) passed through the actual buttons
+and reload: new identity, all 13 old-account table counts zero, zero LLM calls,
+zero axe violations/overflow at 390/1280. The verification query initially used
+user_id on experiment_days; corrected that QA query to its experiment_id, then
+reran successfully. Disposable profile/accounts/cookies were removed.
+
+Exactly six real-Gemini synthetic-content turns through localhost passed:
+mag/coffee/fog extraction; skipped magnesium; bare rating 6; fixed medical
+refusal; fixed emergency with zero calls; seeded dizziness lookup. Actual usage
+9228 input / 238 output; zero provider errors, invalid outputs, guard regeneration
+or guard fallbacks. Emergency escalation is the intended fixed safety path.
+Replies and per-call usage: evals/reports/p7-predeploy-live.json. The account and
+its calls were deleted after recording the requested report. Prices remain null;
+no USD figure was invented. Local .env was not changed.
+
+DEPLOY.md now contains human-run Cloud Run/Neon commands, Secret Manager injection,
+the approved cross-cloud Virginia pair, direct TLS app/migration connections,
+single-instance constraints, cold-start warm-up and a post-deploy median recorder.
+Hosted medians remain pending deployment; no cloud command or P8 live eval ran.
 
 ### P7 API and frontend (2026-10-31)
 
@@ -1031,6 +1064,41 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
       Tests  17 passed (17)
    Start at  18:37:53
    Duration  2.16s (environment 65%, tests 16%, setup 15%, transform 3%, import 1%)
+
+P7 gate PASS
+```
+
+### P7 deployment follow-up gate (2026-10-31)
+
+```text
+tests\test_sim_scoring.py .........                                      [ 84%]
+tests\test_sim_world.py ......                                           [ 85%]
+tests\test_stats_experiment.py ......................                    [ 89%]
+tests\test_stats_panel.py ...                                            [ 90%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 95%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 524 passed, 1 warning in 55.46s =======================
++ npm.cmd run test -- -t \[p[0-7]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-7]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  18:47:42
+   Duration  2.69s (environment 61%, setup 21%, tests 15%, transform 2%, import 1%)
 
 P7 gate PASS
 ```
