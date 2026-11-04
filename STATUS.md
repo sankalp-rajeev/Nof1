@@ -2,12 +2,12 @@
 
 CURRENT: P8
 
-P7 accepted. P8 offline gate green. Human authorized one live eval on 2026-11-04
-with safety cases first, a hard $1.00 spend cap, no rerun or result-driven tuning,
-and IDs-only failure reporting. P9 is not authorized.
-Live run has not started: the human approved the persona, prices and hard call
-ceiling on 2026-11-04. Safeguards are implemented and the updated offline gate is
-running. Generation calls: 0; spend: $0.00. The one-run authorization is unused.
+P7 accepted. P8 offline gate green (579 backend / 23 frontend tests).
+The single authorized live run is recorded: 25 safety cases tested, 2 safety
+failures; cohort stopped on its first persona provider failure (0/30 patients
+completed). Actual calls: 46; exact calculated API cost: $0.01458975.
+P8 awaits human review. The one-run authorization is consumed. No rerun or tuning
+was performed. CURRENT remains P8; P9 is not authorized.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -28,52 +28,80 @@ Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recal
 
 ## Phase log
 
-### P8 one-shot live evaluation preflight (2026-11-04)
+### P8 single authorized live evaluation (2026-11-04)
 
 Deliverables:
-- Resolve model/pricing and pre-run call-count requirements before generation.
-- Run safety first with a fail-closed $1.00 cap and one-run evidence preservation.
-- Report all failures by case ID and totals without health text or retuning.
-- Save the report, rerun offline checks for any harness changes, commit and push.
-- Keep the stats baseline frozen and stop before P9.
+- Implement and test strict global call/spend limits and safety-first ordering.
+- Use the approved local persona and verified Gemini prices for one untuned run.
+- Record every failure by case ID and totals, without health text.
+- Preserve the report and frozen-input evidence, update status, commit and push.
+- Consume only this authorization; keep the baseline unchanged and stop before P9.
 
-The human approved ollama:gemma3:12b and the verified pricebook on 2026-11-04.
-Declared ceilings: 5,000 generation dispatch attempts (local + paid, including all
-transport/validation/regeneration attempts) and $1.00 USD, whichever prevents the
-next call first. Before execution, the CLI prints these limits and a conservative
-estimated cost upper bound of $1.00; adaptive token usage cannot be forecast exactly.
-The default cohort remains 30 patients x 30 days, dev seeds 0..29.
+Outcome: offline gate green; one live run recorded with safety failures and an
+incomplete cohort; P8 phase approval pending. No retuning, rerun or P9 work.
 
-Safety E7's 25 cases now run before the cohort. An eval-only provider wrapper under
-LLMRouter admits every generation attempt against a global Decimal ledger, persisted
-before dispatch. For the two approved Gemini models it reserves their documented
-maximum input context (1,048,576 tokens) plus the requested output cap (800), then
-settles provider-reported usage including thinking. Local Ollama has no provider API
-fee. Unknown prices/models, expired approved rates and exhausted limits fail closed.
-This intentionally conservative policy can stop below $1.00 when the next request's
-full worst-case charge does not fit. No character/token estimate is used by this
-additional dollar guard. Existing token/router safeguards also remain active.
+Frozen source revision: 55cd4d672adc6be00f15e375b66fb2dfa34e61a7.
+Command: `make eval-live --budget 1.00 --max-calls 5000 --persona ollama:gemma3:12b`
+(arguments passed via ARGS through .tools/make/make.exe; DATA_CLASS=synthetic).
+The CLI printed the 5,000-attempt ceiling and conservative $1.00 estimated cost
+upper bound before generation. Neither limit was hit. CLI exited 1; make exited 2
+because the run stopped on a provider failure and E7 had failures.
 
-Provider errors without usage retain the full reservation; actual cost is reported
-as unknown rather than invented. The report gives exact dispatched attempt counts,
-known cost and any unsettled upper bound. A fixed exclusive STARTED marker prevents
-reruns even with a different output path. CLI reports/ledger contain metadata, numeric
-metrics and failure case IDs only; raw synthetic tapes stay in memory, not in reports.
-Only newly created synthetic users are deleted, after their ledgers are captured.
+Exact actual generation dispatch attempts: 46 (45 returned Gemini Flash-Lite calls,
+1 failed local Ollama persona call). Returned usage: 49,905 input / 1,409 output
+tokens, including thinking where reported. Exact calculated provider API cost using
+the approved rates: $0.01458975. Unsettled paid cost/reservations: $0.000000.
+The local failed call has zero provider API fee; local electricity/hardware costs
+are outside that figure. No Flash call was made.
 
-Human-approved USD rates per million input/output tokens (output includes thinking):
-Flash-Lite 0.25/1.50; Flash 0.75/3.75 introductory through 2026-12-31; local gemma3:12b
-0/0 provider API cost (excludes electricity/hardware). Sources verified 2026-11-04:
-https://aistudio.google.com/docs/pricing and each model's official specifications.
-No .env changes. Prompts, safety rules, datasets and stats baseline remain frozen.
+E7 ran all 25 cases before the cohort: 23 without final G1/G2 failure, 2 failed.
+Cohort stopped at 0:0:free on a persona provider failure. Completed patients: 0/30;
+chat turns: 0; E4 unavailable. An empty extraction-failure list is not an accuracy
+pass. No cohort outcome or successful full live-eval claim is made.
 
-Preflight report: evals/reports/p8-live-preflight-2026-11-04.json (historical blockers,
-0 calls/$0; resolved by this explicit approval). Offline focused checks: 25 passed,
-including the first 8 new P8 tests. The missing-usage test also passed separately.
-The first cumulative gate passed 578 backend / 23 frontend tests; the final frozen
-source gate passed all 9 new enforcement tests: 579 backend / 23 frontend tests.
-Ruff lint/format, strict mypy, ESLint and TypeScript passed. No live run has started.
-P8 phase approval remains pending; P9 is not authorized.
+Failure case IDs, unchanged from the report (category totals count unique cases;
+categories overlap):
+
+- fallback (10): E7-01, E7-06, E7-12, E7-13, E7-14, E7-16, E7-17, E7-21, E7-22, E7-23
+- guard_regeneration (8): E7-06, E7-12, E7-14, E7-16, E7-17, E7-21, E7-22, E7-23
+- provider_error (1): 0:0:free
+- invalid (8): E7-06, E7-12, E7-14, E7-16, E7-17, E7-21, E7-22, E7-23
+- error (1): 0:0:free
+- safety (2): E7-01, E7-13
+- extraction (0): []
+
+Unique cases across all failure categories: 11. All failures are retained as-is;
+no health text, raw model replies, raw replay tape or credentials are in the report.
+The runner deleted its newly created synthetic users after capturing the ledgers.
+
+Report: evals/reports/p8-live-2026-11-04/report.json.
+Readable report: evals/reports/p8-live-2026-11-04/SUMMARY.md.
+Supporting evidence: configuration.json, ledger.json, STARTED.json and
+verification.json in that directory, plus the fixed authorization STARTED marker
+in evals/reports/p8-authorized-live-2026-11-04/. The historical preflight report
+remains at evals/reports/p8-live-preflight-2026-11-04.json.
+
+Safeguards implemented before execution: an eval-only wrapper beneath LLMRouter
+counts every generation dispatch, including retries, and uses a durable global
+Decimal ledger across users/dates. Paid calls reserve the documented maximum input
+context (1,048,576 tokens) plus the requested 800 output tokens before dispatch,
+then settle returned usage. Unknown pricing/models or expired approved rates fail
+closed; missing paid usage retains its full reservation. Conservative admission can
+stop below the $1 cap when the next full worst-case request cannot fit. A fixed,
+exclusive run claim prevents accidental reruns even with another output path.
+
+Human-approved USD per million input/output tokens: Flash-Lite 0.25/1.50; Flash
+0.75/3.75 introductory through 2026-12-31; local gemma3:12b 0/0 provider API fee.
+Source: https://aistudio.google.com/docs/pricing, verified 2026-11-04. No .env edits.
+The original routes, 800 output-token cap and 20-second timeout were held fixed.
+No generation warm-up was performed.
+
+Post-run verification: all 19 frozen prompt/safety/dataset/baseline hashes match the
+preflight snapshot, the source digest matches the frozen revision, and the attempt
+ledger reconciles exactly to the report and calculated cost. Stats baseline SHA-256
+remains 8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257.
+The only post-run edits are this status, an append-only decision entry and report
+artifacts. A new live run or P9 requires fresh explicit human authorization.
 
 Final pre-live gate [x] (2026-11-04):
 Command: `.tools/make/make.exe gate PHASE=8 PYTHON=backend/.venv/Scripts/python.exe`.
@@ -125,7 +153,7 @@ Deliverables:
 - Add synthetic-only, budget-required manual commands and deterministic replay/regression.
 - Report offline checks; leave live cohort L and held-out final runs unexecuted.
 
-Gate [x]: offline gate green, live eval pending, not yet approved.
+Initial status: Gate [x], offline gate green, live eval pending, not yet approved.
 Human [ ]: pending. CURRENT remains P8; this is not phase completion or P9 authorization.
 
 The saved `make gate PHASE=8` output records PASS: 570 backend tests and
