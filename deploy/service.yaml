@@ -1,4 +1,4 @@
-# Render non-secret environment placeholders using the command in DEPLOY.md.
+# Legacy sidecar reference. Current two-service PowerShell deployment is in DEPLOY.md.
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:

@@ -1,0 +1,15 @@
+# _IMAGE and _API_INTERNAL_URL are public build settings, not credentials.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file
+      - frontend/Dockerfile
+      - --build-arg
+      - 'API_INTERNAL_URL=${_API_INTERNAL_URL}'
+      - --tag
+      - '${_IMAGE}'
+      - .
+images:
+  - '${_IMAGE}'
+timeout: 1200s

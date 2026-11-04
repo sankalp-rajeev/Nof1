@@ -2,7 +2,10 @@
 
 P8's offline chat simulator and replay are available. Live cohort L evaluation
 and final held-out evaluation are **on hold until explicitly authorized**.
-The deployment procedure is in [DEPLOY.md](DEPLOY.md); no cloud deploy has run.
+The [hosted demo](https://nof1-frontend-196912573980.us-east4.run.app) is deployed
+on Cloud Run with Neon. Use synthetic demo history; do not enter real health
+information. The PowerShell procedure, smoke evidence, measured latency and
+Teardown instructions are in [DEPLOY.md](DEPLOY.md). P8 is not yet approved.
 
 Offline replay (from `backend/`):
 

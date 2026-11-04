@@ -144,6 +144,125 @@ tests/test_scaffold.py::test_outbound_network_is_blocked
 P8 gate PASS
 ```
 
+### Human-operated deployment follow-up (2026-11-04)
+
+The human requested Windows PowerShell instructions and separate backend/frontend
+Cloud Run services in us-east4. Confirmed by human console output: required APIs
+enabled; local Alembic migration succeeded against Neon at 0005 (head); runtime
+account nof1-runtime created; secretAccessor granted on nof1-database-url and
+nof1-gemini-api-key individually; Artifact Registry repository nof1 created.
+
+Prepared deploy/cloudbuild-backend.yaml to build the existing backend Dockerfile
+from the repository root. Its YAML parses and includes no secret inputs. Expanded
+.gcloudignore to cover nested dotenv files and development caches. A local-only
+gcloud upload-manifest audit passed: 204 files, required backend inputs present,
+dotenv/cache/report paths excluded, zero cloud uploads or builds by the agent.
+The human confirmed backend Cloud Build 3181d84b-ac88-4d58-9c02-a6ae5ec62db9
+succeeded in 60 seconds, publishing
+us-east4-docker.pkg.dev/nof1-demo/nof1/backend:45d6fdb. Prepared public runtime
+settings in deploy/backend.env.yaml using the previously approved model routes
+and production caps. Backend deployment will override the migration-running
+image CMD, run one Uvicorn worker, and attach metadata-resolved numeric secret
+versions. FRONTEND_ORIGIN will be updated once the frontend URL exists.
+Human confirmed backend revision nof1-backend-00001-bpv deployed successfully,
+serving 100 percent of traffic at
+https://nof1-backend-196912573980.us-east4.run.app. Prepared frontend Cloud Build
+configuration with that public origin supplied as the server-only build argument
+API_INTERNAL_URL, preserving the existing relative browser API paths and /health
+proxy. The human confirmed frontend Cloud Build
+c7b41d58-9f47-4519-829a-c8f945413c90 succeeded in 3m8s, publishing frontend:45d6fdb
+with digest sha256:b08ddb86960a6ef483a3ca4576d34cc70a97ac7f04ba3b014f5c52b729004d5b.
+Human confirmed creation of the dedicated nof1-frontend-runtime identity without
+secret grants; the backend retains its existing secret-reader identity. Prepared
+deploy/frontend.env.yaml with public server settings and a frontend deploy command
+pinned to the confirmed digest. Its upstream matches the built rewrite target;
+no frontend secret attachment is configured.
+Human confirmed frontend revision nof1-frontend-00001-kk9 deployed successfully,
+serving 100 percent of traffic at
+https://nof1-frontend-196912573980.us-east4.run.app. Added this confirmed origin
+to deploy/backend.env.yaml for future releases and prepared the targeted backend
+environment update. Human confirmed backend revision nof1-backend-00002-m5h
+deployed successfully and is serving 100 percent of traffic after that update.
+Both services are deployed. Human confirmed GET /health through the frontend
+origin returned status=ok. Human confirmed database API and session cookie
+verification succeeded through the frontend, and the temporary account was
+deleted. This used GET /api/tracking and DELETE /api/me with a fresh in-memory
+session and no LLM calls or secret-value output. Human confirmed browser smoke
+for both notices, loaded demo timeline and pattern card, expanded frozen evidence,
+simulated-history controls and frontend-only Fetch/XHR Request URLs. Human then
+confirmed the magnesium/fatigue simulated experiment completed with Helped in
+this test: 4 usable ON days, 4 usable OFF days, benefit 1.8 points, interval
+0.3 to 3.5, and the required limitation sentence. Observed BASELINE on days 1-2,
+ON on days 3-5, OFF on day 6, with washout on the first ON/OFF day.
+Fresh browser sessions need Load demo history before a pattern is available;
+the accepted concrete start date Feb 15 and day-3 first washout are expected.
+Clarify those checklist instructions; no product or test change is needed.
+The human initially left the result card open without deleting that browser account.
+Computer-use located the Edge Nof1 window but returned "Computer Use was not
+approved to use Microsoft Edge" before any input. Provided the human the two
+deletion buttons and empty-journal/reload check after they requested manual
+instructions. Human then confirmed the page reloaded with the journal empty,
+the demo timeline/pattern/verdict gone and Load demo history available again.
+The browser deletion smoke check passed, completing the hosted smoke checklist.
+The browser results are human-verified; the earlier disposable API deletion also passed.
+
+At the human's request to finish the remaining work, the agent ran the existing
+no-LLM measurement script from this workspace against the frontend origin:
+/health median 132.35 ms, /api/tracking median 189.21 ms, nine warm samples each.
+The script confirmed its separate disposable account was deleted; no LLM calls.
+The measurements are client-observed warm medians, not cold-start measurements.
+
+Consolidated DEPLOY.md into the actual two-service PowerShell procedure, preserving
+the measured record and human-reported smoke results. Added human-run Teardown
+for the two services, demo images, exact build archives, secret-reader grants and
+runtime identities. Neon and the pre-existing secrets are preserved; no teardown
+command was executed. Synced PRD to the explicit human topology change and marked
+deploy/service.yaml as a legacy sidecar reference. Four public YAML files validate,
+all 17 documented PowerShell blocks parse without executing them, credential-pattern
+scan found zero matches across the 11 changed/new files, and the approved baseline
+is unchanged. README now links the hosted demo. The final offline P8 gate
+passed: 570 backend / 23 frontend tests, lint, formatting and strict type checks.
+Command: make gate PHASE=8 PYTHON=backend/.venv/Scripts/python.exe, using
+.tools/make/make.exe and fresh project-local pytest temp/cache directories.
+No existing test, threshold, baseline, live model or held-out seed was changed
+or used. No cloud teardown was executed. P8 human approval remains unchecked.
+P8 remains offline gate green, live eval pending, not yet approved.
+
+Deployment follow-up gate output (2026-11-04, last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 85%]
+tests\test_sim_world.py ......                                           [ 86%]
+tests\test_stats_experiment.py ......................                    [ 90%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 570 passed, 1 warning in 146.97s (0:02:26) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  13:18:26
+   Duration  40.64s (environment 80%, setup 19%, tests 1%)
+
+P8 gate PASS
+```
+
 ### P7 accepted — deployment follow-up (2026-10-31)
 
 Deliverables:

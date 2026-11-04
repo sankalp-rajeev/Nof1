@@ -1,0 +1,7 @@
+# Run from the repository root. _IMAGE is a non-secret Artifact Registry tag.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: [build, --file, backend/Dockerfile, --tag, '${_IMAGE}', .]
+images:
+  - '${_IMAGE}'
+timeout: 1200s

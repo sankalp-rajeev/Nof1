@@ -105,7 +105,7 @@ Use the latest stable versions at install time, pinned by lockfile. Anything els
 - Test and quality: pytest, pytest-socket (block network), hypothesis (optional), ruff, mypy.
 - Database: PostgreSQL 16 (docker-compose for dev and CI service container). Human chose Neon Free, direct non-pooled TLS, AWS us-east-1 for deploy.
 - Frontend: Node 20, Next.js (App Router), React, TypeScript strict, Tailwind, Vitest, React Testing Library, ESLint.
-- Infra: Docker, Docker Compose, GitHub Actions. Human chose Cloud Run us-east4 with one frontend ingress container and one backend sidecar per instance; the agent writes Dockerfiles and DEPLOY.md, the human runs deployment. Neon and Cloud Run are cross-cloud in the Northern Virginia metro; choose Neon's region at project creation.
+- Infra: Docker, Docker Compose, GitHub Actions. Human chose separate public frontend and backend Cloud Run services in us-east4, superseding the earlier sidecar choice on 2026-11-04. Each service scales from zero to one instance; the backend has one worker. The frontend proxies API requests to the backend. The agent writes Dockerfiles and DEPLOY.md; cloud build/deploy/teardown commands are human-operated. Neon and Cloud Run are cross-cloud in the Northern Virginia metro; choose Neon's region at project creation.
 - Optional, env-gated: Langfuse SDK (P9), MCP Python SDK (stretch S1).
 
 ---
@@ -722,8 +722,11 @@ Errors use `{error:{code,message}}` with correct status codes. Simple in-memory 
 
 The browser talks only to the frontend origin. Next.js rewrites `/api/*` and
 `/health` using server-only `API_INTERNAL_URL`; production cookies are host-only,
-Secure, httpOnly and SameSite=Lax. Deploy one backend worker and one service
-instance, with no traffic split, because request limits are process-local.
+Secure, httpOnly and SameSite=Lax. Deploy separate frontend and backend Cloud Run
+services, each with at most one instance and no traffic split. Use one backend
+worker because request limits are process-local. Give only the backend runtime
+identity access to the database and Gemini secrets. The browser uses the frontend
+origin; the frontend's server-side proxy reaches the public backend over HTTPS.
 Cloud Run may briefly overlap instances during maintenance/releases; daily LLM
 budgets are stored in Postgres. Use direct Neon TLS connections with pre-ping and
 a 120-second pool recycle. Warm both health and a DB-backed endpoint before the
