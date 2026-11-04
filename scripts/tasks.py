@@ -107,6 +107,10 @@ def main(task: str) -> None:
         dev()
     elif task == "chat":
         backend("-m", "app.dev_chat")
+    elif task == "eval-live":
+        backend("-m", "sim.chat_cli", "live", *sys.argv[2:])
+    elif task == "eval-final":
+        backend("-m", "sim.final", *sys.argv[2:])
     else:
         raise SystemExit(f"{task} is reserved for a later phase; see STATUS.md and PRD.md.")
 

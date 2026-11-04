@@ -1,5 +1,25 @@
 # Nof1
 
+P8's offline chat simulator and replay are available. Live cohort L evaluation
+and final held-out evaluation are **on hold until explicitly authorized**.
+The deployment procedure is in [DEPLOY.md](DEPLOY.md); no cloud deploy has run.
+
+Offline replay (from `backend/`):
+
+```sh
+uv run --offline --no-sync python -m sim.chat_cli replay ../evals/fixtures/chat/handwritten.json
+```
+
+For a later human-triggered live run, configure a verified `SIM_PERSONA` from a
+different model family than the extractor, then use `make eval-live` with an
+explicit positive `MAX_SPEND_USD` or `ARGS="--budget 0.50"`. `ARGS` also accepts
+`--persona provider:model`, `--extractor provider:model`, and `--output PATH`.
+Use a fresh output directory; runs are synthetic-only and delete their users.
+Unknown prices remain null and the token cap applies. Budget exhaustion produces
+a partial report, not a completed cohort. `make eval-final` additionally requires
+human P8 approval, a clean committed tree and an unused durable final-run marker;
+optional `--chat` enables the held-out chat cohort. Neither command runs in CI.
+
 A conversational N-of-1 self-tracking research prototype. It is not medical advice.
 
 The product specification is in [PRD.md](PRD.md), working rules in
@@ -15,7 +35,7 @@ make setup
 # Copy .env.example to .env and configure local settings as needed.
 make db-up
 make migrate
-make gate PHASE=7
+make gate PHASE=8
 make dev
 ```
 

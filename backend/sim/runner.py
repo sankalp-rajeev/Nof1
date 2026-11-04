@@ -92,6 +92,7 @@ def evaluate_suite(
     include_verdicts: bool = True,
     scan_seeds: Sequence[int] = COHORT_A,
     null_seeds: Sequence[int] = COHORT_N,
+    verdict_seeds: Sequence[int] = COHORT_V,
     progress: Callable[[str], None] | None = None,
 ) -> EvaluationReport:
     patients = evaluate_scans(scan_seeds, days=60, n_perm=n_perm, progress=progress)
@@ -131,9 +132,10 @@ def evaluate_suite(
             for sign in ("beneficial", "harmful")
         ):
             beta = -magnitude if sign == "beneficial" else magnitude
+            count = len(verdict_seeds) // 8
             values = [
                 _experiment(seed, beta=beta)
-                for seed in range(COHORT_V.start + cell * 100, COHORT_V.start + (cell + 1) * 100)
+                for seed in verdict_seeds[cell * count : (cell + 1) * count]
             ]
             labels = Counter(label for label, _ in values)
             reference = (
@@ -148,7 +150,7 @@ def evaluate_suite(
                 {label: labels[label] for label in VERDICT_LABELS}, reference, correct, len(values)
             )
             completeness.extend(value for _, value in values)
-        cohorts["V"] = _cohort(COHORT_V, 14)
+        cohorts["V"] = _cohort(verdict_seeds, 14)
     configuration = {
         name: list(value) if isinstance(value, tuple) else value
         for name, value in vars(stats_config).items()

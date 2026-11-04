@@ -103,9 +103,9 @@ Use the latest stable versions at install time, pinned by lockfile. Anything els
 
 - Backend: Python 3.11, `uv`, FastAPI, Uvicorn, Pydantic v2, pydantic-settings, SQLAlchemy 2.0 (sync), psycopg 3, Alembic, numpy, scipy, pandas, rapidfuzz, httpx, tenacity, `google-genai` (Gemini), `openai` (client for any OpenAI-compatible endpoint: Ollama and DeepSeek), PyYAML, Jinja2 (prompts), structlog or stdlib logging.
 - Test and quality: pytest, pytest-socket (block network), hypothesis (optional), ruff, mypy.
-- Database: PostgreSQL 16 (docker-compose for dev and CI service container). Managed free-tier Postgres for deploy (human-chosen).
+- Database: PostgreSQL 16 (docker-compose for dev and CI service container). Human chose Neon Free, direct non-pooled TLS, AWS us-east-1 for deploy.
 - Frontend: Node 20, Next.js (App Router), React, TypeScript strict, Tailwind, Vitest, React Testing Library, ESLint.
-- Infra: Docker, Docker Compose, GitHub Actions. The deploy target is chosen by the human (Cloud Run suggested); the agent writes Dockerfiles and DEPLOY.md.
+- Infra: Docker, Docker Compose, GitHub Actions. Human chose Cloud Run us-east4 with one frontend ingress container and one backend sidecar per instance; the agent writes Dockerfiles and DEPLOY.md, the human runs deployment. Neon and Cloud Run are cross-cloud in the Northern Virginia metro; choose Neon's region at project creation.
 - Optional, env-gated: Langfuse SDK (P9), MCP Python SDK (stretch S1).
 
 ---
@@ -179,6 +179,12 @@ LANGFUSE_HOST=
 ```
 
 There is no global `DATA_CLASS`. Data class is a property of each user and each call (8.8).
+
+Public demo deployment settings override development defaults: `APP_ENV=prod`,
+`DEBUG=false`, `MAX_SPEND_USD=0.50`, `MAX_USER_DAILY_LLM_CALLS=30`, and
+`MAX_TOTAL_TOKENS=60000`. Credentials come from the host's Secret Manager, never
+images or committed files. Missing prices still mean null cost and token-cap
+fallback; the USD setting is not a verified cash ceiling without verified prices.
 
 An unknown or unreachable model ID must fail fast with a clear error naming the purpose and the ID.
 
@@ -662,6 +668,7 @@ The matrix reports counts of every label per (|beta|, sign).
 - Predicted and gold events are matched one-to-one, greedily, on (kind, canonical name, relative_day). Each unmatched predicted event is a false positive and each unmatched gold event is a false negative.
 - A matched pair is a true positive only if status matches, value is within max(10%, 0.5) when gold has a value, and severity is within +/-1 when gold has a severity; otherwise it counts as one false positive plus one false negative.
 - Micro F1 over all messages. Duplicate predicted events beyond the first match are false positives.
+- Normalize the analyzer's event/rating/checklist projections into logical observations before matching. An identical observation represented as both an event and a rating/checklist entry is counted once; duplicate entries within the raw events list remain duplicate predictions.
 
 ### 10.2 Rules
 
@@ -709,9 +716,19 @@ Identity: httpOnly cookie `nof1_uid` (random uuid), created on first request. No
 | POST `/api/demo/load` | none | seeds the 45-day demo history from `DEMO_SEED`; idempotent; 409 if the user already has non-demo data |
 | POST `/api/demo/advance` | `{days: 1..14}` | demo users only: fills each skipped day (ratings, checklist, sleep, adherence) from the demo world and `simulate_experiment`, then increases `clock_offset_days`. No LLM calls |
 | DELETE `/api/me` | none | deletes all user data |
-| GET `/api/debug/llm_calls` | none | only when `DEBUG=true` |
+| GET `/api/debug/llm_calls` | none | only when `DEBUG=true` and `APP_ENV` is not `prod`; otherwise 404 |
 
 Errors use `{error:{code,message}}` with correct status codes. Simple in-memory rate limit of 30 requests per minute per user. CORS restricted to `FRONTEND_ORIGIN`.
+
+The browser talks only to the frontend origin. Next.js rewrites `/api/*` and
+`/health` using server-only `API_INTERNAL_URL`; production cookies are host-only,
+Secure, httpOnly and SameSite=Lax. Deploy one backend worker and one service
+instance, with no traffic split, because request limits are process-local.
+Cloud Run may briefly overlap instances during maintenance/releases; daily LLM
+budgets are stored in Postgres. Use direct Neon TLS connections with pre-ping and
+a 120-second pool recycle. Warm both health and a DB-backed endpoint before the
+interview, and record post-deploy medians using DEPLOY.md; no hosted measurements
+are claimed before deployment.
 
 ---
 
@@ -725,6 +742,8 @@ Single page, three panes (stacked on mobile):
    - Experiment card: progress bar, today's phase label in large text (BASELINE, ON or OFF; washout noted), adherence toggle and rating input (calls the days endpoint), and a final verdict card with the limitation sentence.
 
 Required elements: a persistent banner "Nof1 is a self-tracking research prototype. It is not medical advice." A "Load demo history" button. For demo users, "Next day" and "Skip to end" buttons (calling `/api/demo/advance`) labelled as simulated. A "Delete my data" action. Loading and error states for every request.
+
+Directly under the banner, show: "Demo: don’t enter real health information."
 
 Tests (Vitest): InsightCard shows tier, n, and expands data points; ExperimentCard shows BASELINE, ON and OFF correctly for each phase; chat renders red-flag styling; API client handles the error shape; demo controls render only for demo users.
 

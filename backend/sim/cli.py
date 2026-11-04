@@ -101,6 +101,10 @@ def main() -> int:
             from app.agent.evaluation import evaluate_e7
 
             issues.extend(evaluate_e7())
+        if phase_approved(8):
+            from sim.replay import replay_regression
+
+            issues.extend(replay_regression())
         print(
             "\n".join(issues)
             if issues

@@ -28,9 +28,7 @@ def measure(origin: str) -> dict[str, float]:
 
     def call(path: str, method: str = "GET") -> float:
         started = perf_counter()
-        with client.open(
-            Request(origin + path, method=method), timeout=180
-        ) as response:
+        with client.open(Request(origin + path, method=method), timeout=180) as response:
             if response.status != 200:
                 raise RuntimeError("Deployment measurement request failed")
             response.read()  # Never print or persist response content/cookies.
@@ -43,9 +41,7 @@ def measure(origin: str) -> dict[str, float]:
         for _ in range(9):
             for endpoint, values in samples.items():
                 values.append(call(endpoint))
-        return {
-            key: round(statistics.median(values), 2) for key, values in samples.items()
-        }
+        return {key: round(statistics.median(values), 2) for key, values in samples.items()}
     finally:
         if any(cookie.name == "nof1_uid" for cookie in cookies):
             call("/api/me", "DELETE")

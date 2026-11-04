@@ -12,8 +12,6 @@ from app.stats.experiment import DayObservation, ExperimentProtocol, schedule
 from app.stats.panel import DailyPanel
 from app.stats.randomness import derive_seed
 from sim.config import (
-    DEV_SEED_MAX,
-    DEV_SEED_MIN,
     EFFECT_SIZES,
     EXPOSURES,
     OUTCOME,
@@ -21,6 +19,7 @@ from sim.config import (
     PATIENT_WEIGHTS,
     START_DATE,
 )
+from sim.final_scope import permitted_seed
 
 PatientType = Literal["null", "single_effect", "double_effect", "confounded_null"]
 
@@ -210,7 +209,7 @@ def generate_world(
     forced_effect: PlantedEffect | None = None,
     checklist_error: float = 0,
 ) -> World:
-    if not DEV_SEED_MIN <= seed <= DEV_SEED_MAX:
+    if not permitted_seed(seed):
         raise ValueError("Only dev seeds 0..9999 are permitted outside eval-final")
     if days < 1 or not 0 <= checklist_error <= 1:
         raise ValueError("Positive duration and checklist_error in [0,1] required")

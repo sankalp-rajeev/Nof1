@@ -75,7 +75,7 @@ def analyze(
     tracking = payload.get("tracking", {})
     tracked = {normalize(row["name"]).canonical for row in tracking.get("outcomes", [])}
     reported_numbers = {
-        float(value) for value in re.findall(r"(?<![\w.])-?\d+(?:\.\d+)?(?![\w.])", current)
+        float(value) for value in re.findall(r"(?<![\w.])-?\d+(?:\.\d+)?(?!\w|\.\d)", current)
     }
 
     def grounded(value: TurnAnalysis) -> None:

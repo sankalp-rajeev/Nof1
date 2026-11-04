@@ -1,8 +1,9 @@
 # STATUS
 
-CURRENT: P7
+CURRENT: P8
 
-P7 authorized (2026-10-31), API and demo clock first, frontend second.
+P7 accepted. P8 offline work authorized (2026-10-31); live eval explicitly held.
+P8: offline gate green, live eval pending, not yet approved (reviewed 2026-11-04).
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -16,12 +17,132 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P5 | Extraction, memory, chat orchestration | [x] | [x] |
 | P6 | Experiment loop | [x] | [x] |
 | P7 | API and frontend | [x] | [x] |
-| P8 | Chat-mode simulation and live evals | [ ] | [ ] |
+| P8 | Chat-mode simulation and live evals | [x] | [ ] |
 | P9 | Deploy and polish | [ ] | [ ] |
 
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P8 chat-mode simulation — CURRENT (2026-10-31)
+
+Deliverables:
+- Generate seeded personas and event-only render plans with bounded validation/fallback.
+- Answer checklists, ratings and follow-ups from observed truth without causal leakage.
+- Score one-to-one extraction, including duplicate/status/value/severity errors.
+- Add synthetic-only, budget-required manual commands and deterministic replay/regression.
+- Report offline checks; leave live cohort L and held-out final runs unexecuted.
+
+Gate [x]: offline gate green, live eval pending, not yet approved.
+Human [ ]: pending. CURRENT remains P8; this is not phase completion or P9 authorization.
+
+The saved `make gate PHASE=8` output records PASS: 570 backend tests and
+23 frontend tests, Ruff lint/format, strict mypy, ESLint and TypeScript checks.
+The saved `make eval-regression` also passed: red 71/71, benign false alarms
+0/98, bad guard 108/108, good guard 75/75, and no issues. P8 replay tests run
+inside the offline gate; regression activation still waits for P8 human approval.
+
+2026-11-04 review: inspected persona/render boundaries, greedy extraction scoring,
+synthetic-only tapes and replay, manual CLI budget validation, cumulative patient
+ledgers/cleanup, and held-out final-run restrictions. No blocking code finding.
+New P8 tests retain their p8 marker; existing tests, thresholds and the approved
+stats baseline are unchanged. Pending PRD deployment documentation reflects the
+previously approved P7 topology; the latency-script diff is formatting only.
+
+DECISIONS.md records seeded persona defaults, bounded rendering, scoring/projection
+semantics, budget-safe synthetic cleanup, exclusive final-run safeguards, and the
+explicit-number punctuation fix. The handwritten replay fixture is a scorer
+contract, not evidence of live extraction accuracy.
+
+Human follow-up: live cohort L evaluation remains explicitly held. No live eval,
+held-out generation, cloud deployment or paid command was run for this review.
+Deployment remains human-operated using DEPLOY.md. P8 needs the live run and
+explicit human phase approval before P9 can start.
+
+Saved P8 gate evidence (2026-10-31, last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 85%]
+tests\test_sim_world.py ......                                           [ 86%]
+tests\test_stats_experiment.py ......................                    [ 90%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 570 passed, 1 warning in 67.63s (0:01:07) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  19:19:46
+   Duration  1.98s (environment 67%, tests 15%, setup 15%, transform 1%, import 1%)
+
+P8 gate PASS
+```
+
+2026-11-04 review gate: PASS, 570 backend / 23 frontend tests. Ruff,
+formatting, strict mypy, ESLint and TypeScript passed. Command:
+`make gate PHASE=8 PYTHON=backend/.venv/Scripts/python.exe` using `.tools/make/make.exe`.
+
+The first review rerun exited 2: 563 passed, 7 setup errors, all
+`PermissionError: [WinError 5]` in the old `.cache/pytest/pytest-of-rajee`
+directory; pytest also could not write its old cache. The affected replay test
+passed unchanged with fresh directories. The successful full rerun used only
+`PYTEST_DEBUG_TEMPROOT=C:/Umich/Projects/Nof1/.cache/p8-review-pytest` and
+`PYTEST_ADDOPTS=-o cache_dir=C:/Umich/Projects/Nof1/.cache/p8-review-pytest-cache`.
+No test, threshold, socket restriction or dependency changed. Local PostgreSQL
+was started for the offline gate without pulling an image; its volume was preserved.
+Credential-pattern scan: zero findings in all 26 changed/new files. Approved
+baseline SHA-256 remains `8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257`.
+
+Review gate output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 85%]
+tests\test_sim_world.py ......                                           [ 86%]
+tests\test_stats_experiment.py ......................                    [ 90%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 570 passed, 1 warning in 158.25s (0:02:38) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  10:42:27
+   Duration  41.41s (environment 77%, setup 19%, transform 2%, tests 1%)
+
+P8 gate PASS
+```
 
 ### P7 accepted — deployment follow-up (2026-10-31)
 
