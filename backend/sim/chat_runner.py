@@ -373,7 +373,7 @@ def _run_chat(
     report = JSON.validate_python(
         {
             "mode": "live_synthetic",
-            "ordering": "safety_first",
+            "ordering": "safety_first" if include_e7 else "cohort_only",
             "failure_case_ids": {key: sorted(set(ids)) for key, ids in failures.items()},
             "failure_totals": {key: len(set(ids)) for key, ids in failures.items()},
             "total_traced_attempts": len(calls),

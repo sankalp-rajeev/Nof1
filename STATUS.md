@@ -28,6 +28,74 @@ Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recal
 
 ## Phase log
 
+### P8 separately authorized E4-only follow-up (2026-11-04)
+
+Deliverables:
+- Classify E7-01/E7-13 using retained metadata and static code, without case reruns.
+- Repair eval-runner persona connectivity/timeout only; hold product inputs fixed.
+- Run cohort L once with no safety cases, $1.00 cap and 5,000-attempt maximum.
+- Save this as a separate run, reconcile calls/costs and frozen hashes.
+- Commit/push the report and status, then stop for human review before P9.
+
+Human authorization: the prior run remains immutable and consumed. One new E4-only
+run is explicitly authorized; safety is excluded. Preflight generation calls: 0.
+E7-01 and E7-13 classify as other: G1 false positives on the fixed escalation
+path. Classification is reconstructed from fallback/one-analyzer-call metadata and
+static-template checks; raw original replies and per-case guard IDs were not retained.
+No live case was rerun and no guard or template was changed.
+
+Ollama metadata: server reachable, gemma3:12b installed, no loaded model at follow-up.
+Original failure latency 23.656 seconds with a 20-second SDK timeout points to an
+eval-runner cold-start timeout; original error code was not preserved, so this root
+cause is an inference. Metadata-only HTTP requests returned 200: localhost took
+2.375 seconds versus 0.047 seconds for 127.0.0.1. The eval-only persona client now
+uses a 120-second timeout and IPv4 loopback; Gemini retains 20 seconds. No generation
+warm-up, model pull, live safety rerun or production configuration change is performed.
+
+The CLI has a separate --e4-only scope and exclusive authorization marker; the
+original run's marker is retained. Strict call/spend enforcement is unchanged.
+Cohort L remains 30 patients x 30 days, dev seeds 0..29, same models/prompts/output
+cap and datasets. Estimated cost upper bound: $1.00, subject to earlier conservative
+admission. New runner tests are offline and marked p8. Full gate [x]: 582 backend /
+23 frontend tests passed, plus Ruff lint/format, strict mypy, ESLint and TypeScript.
+Preflight report: evals/reports/p8-e4-preflight-2026-11-04.json.
+All 19 original frozen input hashes match; no baseline, prompt, rule or dataset edits.
+
+E4 runner gate evidence (last 30 lines, 2026-11-04):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 85%]
+tests\test_sim_world.py ......                                           [ 86%]
+tests\test_stats_experiment.py ......................                    [ 90%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 95%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 582 passed, 1 warning in 330.41s (0:05:30) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  14:49:26
+   Duration  7.12s (environment 58%, setup 21%, tests 19%, transform 1%, import 1%)
+
+P8 gate PASS
+```
+
 ### P8 single authorized live evaluation (2026-11-04)
 
 Deliverables:

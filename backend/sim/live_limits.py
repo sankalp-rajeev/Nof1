@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from app.agent.llm.base import CallContext, LLMClient, LLMMessage, LLMResponse
 from app.agent.llm.cost import BudgetExceeded, PriceBook
+from app.agent.llm.openai_compat import OpenAICompatClient
 from sim.config import GEMINI_MAX_INPUT_TOKENS, LIVE_MAX_CALLS
 from sim.replay import RecordingClient, RecordingRouter
 
@@ -169,10 +170,21 @@ class LimitedClient:
 
 class LimitedRouter(RecordingRouter):
     limits: LiveLimits
+    persona_timeout_s: float | None = None
 
     def _client(self, provider: str, model: str) -> LLMClient:
         client = super()._client(provider, model)
         assert isinstance(client, RecordingClient)
         if not isinstance(client.client, LimitedClient):
+            if (
+                provider == "ollama"
+                and f"{provider}:{model}" == self.settings.sim_persona
+                and self.persona_timeout_s is not None
+                and isinstance(client.client, OpenAICompatClient)
+            ):
+                # Eval-only cold-start allowance. Preserve SDK retry and request settings.
+                client.client = OpenAICompatClient(
+                    client.client.client.with_options(timeout=self.persona_timeout_s), model
+                )
             client.client = LimitedClient(client.client, self.limits, f"{provider}:{model}")
         return client

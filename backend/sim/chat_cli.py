@@ -15,7 +15,13 @@ from app.config import ROOT, Settings
 from app.db.session import create_db_engine
 from sim.chat_runner import run_chat
 from sim.cli import revision, source_digest
-from sim.config import CHAT_DAYS, COHORT_L, LIVE_MAX_CALLS
+from sim.config import (
+    CHAT_DAYS,
+    COHORT_L,
+    E4_OLLAMA_BASE_URL,
+    E4_PERSONA_TIMEOUT_S,
+    LIVE_MAX_CALLS,
+)
 from sim.live_limits import LimitedRouter, LiveLimits, claim_run
 from sim.replay import ReplayBundle, replay_bundle, score_dict
 
@@ -33,6 +39,11 @@ def family(route: str) -> str:
     if provider != "ollama":
         return provider
     return re.split(r"[\d:.-]", model.rsplit("/", 1)[-1])[0]
+
+
+def authorization_claim(*, e4_only: bool) -> Path:
+    scope = "e4" if e4_only else "live"
+    return ROOT / f"evals/reports/p8-authorized-{scope}-2026-11-04"
 
 
 def live_settings(budget: float, persona: str | None, extractor: str | None) -> Settings:
@@ -65,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
     live.add_argument("--persona")
     live.add_argument("--extractor")
     live.add_argument("--max-calls", type=int, default=LIVE_MAX_CALLS)
+    live.add_argument("--e4-only", action="store_true", help="Separate authorized cohort-only run")
     live.add_argument("--patients", type=int, default=len(COHORT_L), choices=range(1, 31))
     live.add_argument("--days", type=int, default=CHAT_DAYS, choices=range(1, CHAT_DAYS + 1))
     live.add_argument("--output", type=Path, default=ROOT / "evals/reports/p8-live")
@@ -88,6 +100,8 @@ def main(argv: list[str] | None = None) -> int:
     if os.environ.get("DATA_CLASS") != "synthetic":
         raise ValueError("Live evaluation requires DATA_CLASS=synthetic")
     settings = live_settings(budget, args.persona, args.extractor)
+    if args.e4_only:
+        settings = settings.model_copy(update={"ollama_base_url": E4_OLLAMA_BASE_URL})
     if args.output.exists():
         raise FileExistsError(
             "Choose a new output directory; prior eval evidence is not overwritten"
@@ -96,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # A fixed claim prevents accidentally consuming this authorization twice,
         # even with a different output argument or after an interrupted process.
-        claim_run(ROOT / "evals/reports/p8-authorized-live-2026-11-04")
+        claim_run(authorization_claim(e4_only=args.e4_only))
         claim_run(args.output)
         limits = LiveLimits(
             PriceBook.load(),
@@ -107,6 +121,8 @@ def main(argv: list[str] | None = None) -> int:
         router = LimitedRouter(settings, store=SQLTraceStore(engine), prices=limits.prices)
         router.tape = []
         router.limits = limits
+        if args.e4_only:
+            router.persona_timeout_s = E4_PERSONA_TIMEOUT_S
         metadata = {
             "revision": revision(),
             "source_digest": source_digest(),
@@ -116,6 +132,10 @@ def main(argv: list[str] | None = None) -> int:
             "narrator": settings.llm_narrator,
             "max_output_tokens": settings.max_output_tokens,
             "llm_timeout_s": settings.llm_timeout_s,
+            "persona_timeout_s": router.persona_timeout_s or settings.llm_timeout_s,
+            "ollama_base_url": settings.ollama_base_url,
+            "evaluation_scope": "E4_only" if args.e4_only else "safety_then_cohort",
+            "safety_cases_enabled": not args.e4_only,
             "patients": args.patients,
             "days": args.days,
             "pricebook": (ROOT / "config/prices.yaml").read_text(encoding="utf-8"),
@@ -130,7 +150,9 @@ def main(argv: list[str] | None = None) -> int:
                     "hard_spend_cap_usd": budget,
                     "estimated_cost_upper_bound_usd": budget,
                     "cost_estimate_method": "conservative admission bound; not a token forecast",
-                    "ordering": "25 safety cases before cohort",
+                    "ordering": "E4 cohort only; no safety cases"
+                    if args.e4_only
+                    else "25 safety cases before cohort",
                 }
             ),
             flush=True,
@@ -143,6 +165,7 @@ def main(argv: list[str] | None = None) -> int:
                 days=args.days,
                 router=router,
                 limits=limits,
+                include_e7=not args.e4_only,
             )
         except BaseException as error:
             # Preserve failures without allowing exceptions/tracebacks to leak payloads.
@@ -152,6 +175,8 @@ def main(argv: list[str] | None = None) -> int:
                 "failure_case_ids": {"driver_error": [limits.case_id]},
             }
         report["limits"] = TypeAdapter(JsonValue).validate_python(limits.summary())
+        report["evaluation_scope"] = "E4_only" if args.e4_only else "safety_then_cohort"
+        report["safety_cases_enabled"] = not args.e4_only
         (args.output / "report.json").write_text(
             json.dumps(report, indent=2) + "\n", encoding="utf-8"
         )
