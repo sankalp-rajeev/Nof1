@@ -1,0 +1,80 @@
+{
+  "status": "not_started_preflight_blocked",
+  "created_at": "2026-11-04T18:30:34.886657+00:00",
+  "revision": "b91c7ebb653eb2c477f0e3d66c07f44db8b8cadb",
+  "authorization": {
+    "live_runs": 1,
+    "max_spend_usd": 1.0,
+    "safety_first": true,
+    "reruns_allowed": false,
+    "p9_authorized": false
+  },
+  "generation_calls_started": 0,
+  "incurred_cost_usd": 0.0,
+  "planned_exact_generation_calls": null,
+  "estimated_total_cost_usd": null,
+  "cohort": {
+    "patients": 30,
+    "days_per_patient": 30,
+    "dev_seed_start": 0,
+    "dev_seed_end_inclusive": 29
+  },
+  "safety_cases": {
+    "total": 25,
+    "tested": 0,
+    "failed_case_ids": [],
+    "results_available": false
+  },
+  "preflight_blocker_ids": [
+    "preflight-call-count-adaptive",
+    "preflight-persona-unconfigured",
+    "preflight-pricebook-empty",
+    "preflight-safety-last",
+    "preflight-budget-reservation-estimate"
+  ],
+  "configured_models": {
+    "persona": "ollama:CHANGE_ME",
+    "analyzer": "gemini:gemini-3.1-flash-lite",
+    "composer": "gemini:gemini-3.1-flash-lite",
+    "narrator": "gemini:gemini-3.8-flash"
+  },
+  "installed_local_persona_candidate": "ollama:gemma3:12b",
+  "pricebook_modified": false,
+  "proposed_verified_standard_text_prices_per_million_usd": {
+    "gemini:gemini-3.1-flash-lite": {
+      "input": 0.25,
+      "output_including_thinking": 1.5
+    },
+    "gemini:gemini-3.8-flash": {
+      "input": 0.75,
+      "output_including_thinking": 3.75,
+      "valid_through": "2026-12-31"
+    }
+  },
+  "pricing_source": "https://aistudio.google.com/docs/pricing",
+  "pricing_verified_on": "2026-11-04",
+  "frozen_sha256": {
+    "backend/app/agent/prompts/composer_answer.md": "2356dfffb362b0178cf6175c5ad1b56cfed6c371ddd7a4b1df2b76da4e6b45ee",
+    "backend/app/agent/prompts/composer_checkin.md": "1a3ddb148a70bfd1a6ad8f7b55d4059be536e390848d7af6e230dc7a4e6f09ea",
+    "backend/app/agent/prompts/composer_experiment.md": "84f9cc19a2d17c60c7d0d5279db9cd5a0c4fbbb5035f9dc0d402a3d5858f6836",
+    "backend/app/agent/prompts/composer_insight.md": "a8f3d4e8da3a6d00dd4f61842c74a67252ba53afad9c5b919b01f0605e213472",
+    "backend/app/agent/prompts/judge_safety.md": "0d8d7f806928be33065c276c8ab5a9680c358a30f8479e3c0cc0a2e1c9d2bb74",
+    "backend/app/agent/prompts/persona_render.md": "c2491ac9d4801f12bfa821a79dfa2e1d364ddb97a546451eeb9c944d8f994a8d",
+    "backend/app/agent/prompts/turn_analyzer.md": "c2a1bb95120406899b495925a229e76ae50a57df1d422140ec0175b3ff86017e",
+    "backend/app/agent/safety/__init__.py": "0b59a3ccd142bf0387b66580b8979f89d25bd4898b07516746049623d991c774",
+    "backend/app/agent/safety/config.py": "20c2ac7fc68c872c139687868665c086a16b77b52d82df4916696ddb9ea20c49",
+    "backend/app/agent/safety/evaluation.py": "2e788500ec255feb7ff20409fbec212d5c38634a5d842aa0244432427c0c3a30",
+    "backend/app/agent/safety/inbound.py": "607ee55f37cf2afff8fe0bac6f1aa9808f3bd1233d4b2c0965aa8c6c624cc119",
+    "backend/app/agent/safety/output_guard.py": "a3f103ca84c26ecc1fef825b32e6ebb7dca5c59474fa12580f61daad5046dee6",
+    "backend/app/agent/safety/templates.py": "616b1d03eafabc7874455c9234e3d89f30026f080cbae4f1806965182f800162",
+    "evals/safety/adversarial_dx.jsonl": "fe9e3fbb0a361dd6b475b7877e86968092be9c89bc6049e7e4700a79b7167442",
+    "evals/safety/benign.jsonl": "b6926e7d35eaeb05d1fdd087b7d311edffb672012a47d0e6dce71b68e41a7597",
+    "evals/safety/guard_bad_replies.jsonl": "32a8fc52947609d39b67b360959a2176ccaa4d8ce491d04b303e59229de1c3dc",
+    "evals/safety/guard_good_replies.jsonl": "65a7267489f8fe61382bf08a9911a9310fea2d9aa988327f85e2207ff568406a",
+    "evals/safety/red_flags.jsonl": "57d072b0ef9357556a4946fbfb034682b28c42b9ed6bd5814ba130e2627433dc",
+    "evals/baselines/stats_baseline.json": "8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257"
+  },
+  "frozen_inputs_modified": false,
+  "stats_baseline_modified": false,
+  "live_run_authorization_consumed": false
+}

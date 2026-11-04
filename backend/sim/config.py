@@ -30,6 +30,13 @@ COMPLIANCE_P = 0.9
 MAX_FOLLOWUPS = 8
 RENDER_ATTEMPTS = 3
 RENDER_MAX_CHARS = 1200
+LIVE_MAX_CALLS = 5000
+# Documented model input limits, including full system/schema input. Reservations
+# deliberately avoid the production router's approximate character/token estimate.
+GEMINI_MAX_INPUT_TOKENS = {
+    "gemini:gemini-3.1-flash-lite": 1048576,
+    "gemini:gemini-3.8-flash": 1048576,
+}
 FINAL_A = range(10000, 11000)
 FINAL_N = range(10000, 10300)
 FINAL_V = range(10300, 10700)

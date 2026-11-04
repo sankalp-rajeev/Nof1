@@ -1,3 +1,14 @@
 # Human-maintained USD per million tokens. Missing prices mean cost = null.
-# Add verified provider:model entries with input and output prices before live use.
-{}
+# Human approved 2026-11-04. Standard text rates, output includes thinking.
+# https://aistudio.google.com/docs/pricing
+# Flash introductory rates expire 2026-12-31; live harness rejects expired rates.
+gemini:gemini-3.1-flash-lite:
+  input: 0.25
+  output: 1.50
+gemini:gemini-3.8-flash:
+  input: 0.75
+  output: 3.75
+# Local inference has no provider API charge (excludes electricity/hardware).
+ollama:gemma3:12b:
+  input: 0
+  output: 0

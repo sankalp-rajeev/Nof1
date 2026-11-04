@@ -2,8 +2,12 @@
 
 CURRENT: P8
 
-P7 accepted. P8 offline work authorized (2026-10-31); live eval explicitly held.
-P8: offline gate green, live eval pending, not yet approved (reviewed 2026-11-04).
+P7 accepted. P8 offline gate green. Human authorized one live eval on 2026-11-04
+with safety cases first, a hard $1.00 spend cap, no rerun or result-driven tuning,
+and IDs-only failure reporting. P9 is not authorized.
+Live run has not started: the human approved the persona, prices and hard call
+ceiling on 2026-11-04. Safeguards are implemented and the updated offline gate is
+running. Generation calls: 0; spend: $0.00. The one-run authorization is unused.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -23,6 +27,94 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P8 one-shot live evaluation preflight (2026-11-04)
+
+Deliverables:
+- Resolve model/pricing and pre-run call-count requirements before generation.
+- Run safety first with a fail-closed $1.00 cap and one-run evidence preservation.
+- Report all failures by case ID and totals without health text or retuning.
+- Save the report, rerun offline checks for any harness changes, commit and push.
+- Keep the stats baseline frozen and stop before P9.
+
+The human approved ollama:gemma3:12b and the verified pricebook on 2026-11-04.
+Declared ceilings: 5,000 generation dispatch attempts (local + paid, including all
+transport/validation/regeneration attempts) and $1.00 USD, whichever prevents the
+next call first. Before execution, the CLI prints these limits and a conservative
+estimated cost upper bound of $1.00; adaptive token usage cannot be forecast exactly.
+The default cohort remains 30 patients x 30 days, dev seeds 0..29.
+
+Safety E7's 25 cases now run before the cohort. An eval-only provider wrapper under
+LLMRouter admits every generation attempt against a global Decimal ledger, persisted
+before dispatch. For the two approved Gemini models it reserves their documented
+maximum input context (1,048,576 tokens) plus the requested output cap (800), then
+settles provider-reported usage including thinking. Local Ollama has no provider API
+fee. Unknown prices/models, expired approved rates and exhausted limits fail closed.
+This intentionally conservative policy can stop below $1.00 when the next request's
+full worst-case charge does not fit. No character/token estimate is used by this
+additional dollar guard. Existing token/router safeguards also remain active.
+
+Provider errors without usage retain the full reservation; actual cost is reported
+as unknown rather than invented. The report gives exact dispatched attempt counts,
+known cost and any unsettled upper bound. A fixed exclusive STARTED marker prevents
+reruns even with a different output path. CLI reports/ledger contain metadata, numeric
+metrics and failure case IDs only; raw synthetic tapes stay in memory, not in reports.
+Only newly created synthetic users are deleted, after their ledgers are captured.
+
+Human-approved USD rates per million input/output tokens (output includes thinking):
+Flash-Lite 0.25/1.50; Flash 0.75/3.75 introductory through 2026-12-31; local gemma3:12b
+0/0 provider API cost (excludes electricity/hardware). Sources verified 2026-11-04:
+https://aistudio.google.com/docs/pricing and each model's official specifications.
+No .env changes. Prompts, safety rules, datasets and stats baseline remain frozen.
+
+Preflight report: evals/reports/p8-live-preflight-2026-11-04.json (historical blockers,
+0 calls/$0; resolved by this explicit approval). Offline focused checks: 25 passed,
+including the first 8 new P8 tests. The missing-usage test also passed separately.
+The first cumulative gate passed 578 backend / 23 frontend tests; the final frozen
+source gate passed all 9 new enforcement tests: 579 backend / 23 frontend tests.
+Ruff lint/format, strict mypy, ESLint and TypeScript passed. No live run has started.
+P8 phase approval remains pending; P9 is not authorized.
+
+Final pre-live gate [x] (2026-11-04):
+Command: `.tools/make/make.exe gate PHASE=8 PYTHON=backend/.venv/Scripts/python.exe`.
+Only host DEBUG/APP_ENV overrides and fresh pytest temp/cache paths were used.
+Existing tests and thresholds were not changed. Credential scan: 9 files, no findings.
+Frozen input verification: all 19 hashes match the preflight snapshot.
+
+Last 30 lines:
+
+```text
+tests\test_sim_scoring.py .........                                      [ 85%]
+tests\test_sim_world.py ......                                           [ 86%]
+tests\test_stats_experiment.py ......................                    [ 90%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 94%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 579 passed, 1 warning in 270.75s (0:04:30) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  14:28:26
+   Duration  6.40s (environment 54%, tests 26%, setup 17%, transform 2%, import 1%)
+
+P8 gate PASS
+```
 
 ### P8 chat-mode simulation — CURRENT (2026-10-31)
 

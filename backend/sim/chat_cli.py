@@ -4,13 +4,20 @@ import argparse
 import json
 import os
 import re
+from decimal import Decimal
 from pathlib import Path
 
+from pydantic import JsonValue, TypeAdapter
+
+from app.agent.llm.cost import PriceBook
+from app.agent.tracing import SQLTraceStore
 from app.config import ROOT, Settings
 from app.db.session import create_db_engine
 from sim.chat_runner import run_chat
-from sim.config import CHAT_DAYS, COHORT_L
-from sim.replay import ReplayBundle, replay_bundle, score_dict, write_bundle
+from sim.cli import revision, source_digest
+from sim.config import CHAT_DAYS, COHORT_L, LIVE_MAX_CALLS
+from sim.live_limits import LimitedRouter, LiveLimits, claim_run
+from sim.replay import ReplayBundle, replay_bundle, score_dict
 
 
 def require_budget(value: float | None) -> float:
@@ -57,6 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     live.add_argument("--budget", type=float, default=os.environ.get("MAX_SPEND_USD"))
     live.add_argument("--persona")
     live.add_argument("--extractor")
+    live.add_argument("--max-calls", type=int, default=LIVE_MAX_CALLS)
     live.add_argument("--patients", type=int, default=len(COHORT_L), choices=range(1, 31))
     live.add_argument("--days", type=int, default=CHAT_DAYS, choices=range(1, CHAT_DAYS + 1))
     live.add_argument("--output", type=Path, default=ROOT / "evals/reports/p8-live")
@@ -75,6 +83,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     budget = require_budget(args.budget)
+    if budget > 1 or not 0 < args.max_calls <= LIVE_MAX_CALLS:
+        raise ValueError("Authorized live ceilings: $1.00 and 5000 dispatch attempts")
+    if os.environ.get("DATA_CLASS") != "synthetic":
+        raise ValueError("Live evaluation requires DATA_CLASS=synthetic")
     settings = live_settings(budget, args.persona, args.extractor)
     if args.output.exists():
         raise FileExistsError(
@@ -82,14 +94,69 @@ def main(argv: list[str] | None = None) -> int:
         )
     engine = create_db_engine(settings.database_url)
     try:
-        report, bundle = run_chat(settings, engine, seeds=range(args.patients), days=args.days)
-        args.output.mkdir(parents=True)
+        # A fixed claim prevents accidentally consuming this authorization twice,
+        # even with a different output argument or after an interrupted process.
+        claim_run(ROOT / "evals/reports/p8-authorized-live-2026-11-04")
+        claim_run(args.output)
+        limits = LiveLimits(
+            PriceBook.load(),
+            args.output / "ledger.json",
+            max_calls=args.max_calls,
+            cap=Decimal(str(budget)),
+        )
+        router = LimitedRouter(settings, store=SQLTraceStore(engine), prices=limits.prices)
+        router.tape = []
+        router.limits = limits
+        metadata = {
+            "revision": revision(),
+            "source_digest": source_digest(),
+            "persona": settings.sim_persona,
+            "analyzer": settings.llm_analyzer,
+            "composer": settings.llm_composer,
+            "narrator": settings.llm_narrator,
+            "max_output_tokens": settings.max_output_tokens,
+            "llm_timeout_s": settings.llm_timeout_s,
+            "patients": args.patients,
+            "days": args.days,
+            "pricebook": (ROOT / "config/prices.yaml").read_text(encoding="utf-8"),
+        }
+        (args.output / "configuration.json").write_text(
+            json.dumps(metadata, indent=2) + "\n", encoding="utf-8"
+        )
+        print(
+            json.dumps(
+                {
+                    "hard_max_calls": args.max_calls,
+                    "hard_spend_cap_usd": budget,
+                    "estimated_cost_upper_bound_usd": budget,
+                    "cost_estimate_method": "conservative admission bound; not a token forecast",
+                    "ordering": "25 safety cases before cohort",
+                }
+            ),
+            flush=True,
+        )
+        try:
+            report, _ = run_chat(
+                settings,
+                engine,
+                seeds=range(args.patients),
+                days=args.days,
+                router=router,
+                limits=limits,
+            )
+        except BaseException as error:
+            # Preserve failures without allowing exceptions/tracebacks to leak payloads.
+            report = {
+                "stopped": "driver_error",
+                "exception_class": type(error).__name__,
+                "failure_case_ids": {"driver_error": [limits.case_id]},
+            }
+        report["limits"] = TypeAdapter(JsonValue).validate_python(limits.summary())
         (args.output / "report.json").write_text(
             json.dumps(report, indent=2) + "\n", encoding="utf-8"
         )
-        write_bundle(bundle, args.output / "replay.json")
         print(json.dumps(report, indent=2))
-        e7 = report["E7"]
+        e7 = report.get("E7", {"failed": []})
         assert isinstance(e7, dict)
         return int(report["stopped"] is not None or bool(e7["failed"]))
     finally:

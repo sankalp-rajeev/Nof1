@@ -24,6 +24,7 @@ from app.db.repos import Repository
 from app.domain.schemas import ExposureChecklist, Pending, UserInput
 from sim.config import ADHERENCE_P, CHAT_DAYS, COHORT_L, EXPOSURES, MAX_FOLLOWUPS, OUTCOME
 from sim.extraction import ExtractionScore, Label
+from sim.live_limits import LiveLimits
 from sim.personas import mention_plan, observed_events, participation, persona_card, persona_reply
 from sim.render import render
 from sim.replay import RecordingRouter, ReplayBundle, ReplayCase, replay_case, score_dict
@@ -108,6 +109,7 @@ def run_chat(
     days: int = CHAT_DAYS,
     router: RecordingRouter | None = None,
     include_e7: bool = True,
+    limits: LiveLimits | None = None,
 ) -> tuple[dict[str, JsonValue], ReplayBundle]:
     created_users: list[UUID] = []
     try:
@@ -119,6 +121,7 @@ def run_chat(
             router=router,
             include_e7=include_e7,
             created_users=created_users,
+            limits=limits,
         )
     finally:
         # Preserve all trace rows until the last call: CLI budget reservations
@@ -139,6 +142,7 @@ def _run_chat(
     router: RecordingRouter | None,
     include_e7: bool,
     created_users: list[UUID],
+    limits: LiveLimits | None,
 ) -> tuple[dict[str, JsonValue], ReplayBundle]:
     if days < 1 or days > CHAT_DAYS:
         raise ValueError("Chat evaluation supports 1..30 days")
@@ -158,6 +162,22 @@ def _run_chat(
     renders = render_fallbacks = dropped = bounded = 0
     completed = 0
     stopped: str | None = None
+    active_case = "preflight"
+    trace_cases: dict[UUID, str] = {}
+    failures: dict[str, list[str]] = defaultdict(list)
+
+    def set_case(identity: str) -> None:
+        nonlocal active_case
+        active_case = identity
+        if limits is not None:
+            limits.case_id = identity
+
+    def record_result(result: ChatResult, identity: str) -> None:
+        trace_cases[result.trace_id] = identity
+        if result.regenerated:
+            failures["guard_regeneration"].append(identity)
+        if result.fallback:
+            failures["fallback"].append(identity)
 
     def new_user() -> UUID:
         with Session(engine) as session, session.begin():
@@ -181,6 +201,7 @@ def _run_chat(
         with Session(engine) as session:
             pending = Repository(session).get_state(uid).pending
         result = agent.process(uid, text, client_msg_id=uuid4())
+        record_result(result, identity)
         turns += 1
         regenerated += int(result.regenerated)
         fallback += int(result.regenerated and result.fallback)
@@ -190,8 +211,37 @@ def _run_chat(
             raise BudgetExceeded("App entered limited mode")
         return result
 
+    e7_failed: list[str] = []
+    e7_tested = 0
+    if include_e7:
+        for item in adversarial_cases():
+            set_case(item.id)
+            uid = new_user()
+            try:
+                safety_result = agent.process(uid, item.user_text, client_msg_id=uuid4())
+                record_result(safety_result, item.id)
+                if safety_result.limited:
+                    failures["incomplete"].append(item.id)
+                    stopped = "budget_exhausted_during_e7"
+                    break
+                e7_tested += 1
+                if {"G1", "G2"} & set(
+                    OutputGuard().check(safety_result.reply, safety_result.facts or Facts())
+                ):
+                    e7_failed.append(item.id)
+            except BudgetExceeded:
+                failures["incomplete"].append(item.id)
+                stopped = "budget_exhausted_during_e7"
+                break
+            except ProviderError:
+                failures["provider_error"].append(item.id)
+                stopped = "provider_failure_during_e7"
+                break
+            finally:
+                capture_calls(uid)
+    safety_calls = len(calls)
     try:
-        for seed in seeds:
+        for seed in () if stopped is not None else seeds:
             world = generate_world(seed, days=days)
             calendar = list(world.days)
             card = persona_card(seed)
@@ -237,11 +287,21 @@ def _run_chat(
                         else card
                     )
                     plan = mention_plan(events, card, seed=seed * CHAT_DAYS + index)
+                    set_case(f"{seed}:{index}:free")
+                    render_trace = uuid4()
+                    trace_cases[render_trace] = active_case
                     result = render(
-                        router, plan, style, ctx=CallContext("persona", "synthetic", uid, uuid4())
+                        router,
+                        plan,
+                        style,
+                        ctx=CallContext("persona", "synthetic", uid, render_trace),
                     )
                     renders += 1
                     render_fallbacks += int(result.fallback)
+                    if result.attempts > 1:
+                        failures["render_validation"].append(active_case)
+                    if result.fallback:
+                        failures["render_fallback"].append(active_case)
                     send(uid, result.text, plan, f"{seed}:{index}:free")
                     for follow_index in range(MAX_FOLLOWUPS):
                         with Session(engine) as session:
@@ -256,49 +316,51 @@ def _run_chat(
                             seed=seed * 1000 + index * MAX_FOLLOWUPS + follow_index,
                             adherence=compliance.get(day.date.isoformat()),
                         )
+                        set_case(f"{seed}:{index}:{follow_index}")
                         if answer.fixed is not None:
                             text = answer.fixed
                         else:
+                            render_trace = uuid4()
+                            trace_cases[render_trace] = active_case
                             phrased = render(
                                 router,
                                 answer.events,
                                 style,
-                                ctx=CallContext("persona", "synthetic", uid, uuid4()),
+                                ctx=CallContext("persona", "synthetic", uid, render_trace),
                             )
                             renders += 1
                             render_fallbacks += int(phrased.fallback)
+                            if phrased.attempts > 1:
+                                failures["render_validation"].append(active_case)
+                            if phrased.fallback:
+                                failures["render_fallback"].append(active_case)
                             text = phrased.text
                         send(uid, text, answer.events, f"{seed}:{index}:{follow_index}")
                     else:
                         bounded += 1
+                        failures["followup_bound"].append(active_case)
                 completed += 1
             finally:
                 capture_calls(uid)
     except BudgetExceeded:
+        failures["incomplete"].append(active_case)
         stopped = "budget_exhausted"
     except ProviderError:
+        failures["provider_error"].append(active_case)
         stopped = "provider_failure"
 
     e8 = latency_report(
-        calls, turns=turns, regenerated=regenerated, fallback=fallback, all_fallbacks=all_fallbacks
+        calls[safety_calls:],
+        turns=turns,
+        regenerated=regenerated,
+        fallback=fallback,
+        all_fallbacks=all_fallbacks,
     )
-    e7_failed: list[str] = []
-    e7_tested = 0
-    if include_e7 and stopped is None:
-        for item in adversarial_cases():
-            uid = new_user()
-            try:
-                safety_result = agent.process(uid, item.user_text, client_msg_id=uuid4())
-                if safety_result.limited:
-                    stopped = "budget_exhausted_during_e7"
-                    break
-                e7_tested += 1
-                if {"G1", "G2"} & set(
-                    OutputGuard().check(safety_result.reply, safety_result.facts or Facts())
-                ):
-                    e7_failed.append(item.id)
-            finally:
-                capture_calls(uid)
+    for call in calls:
+        if call.status in {"error", "invalid", "budget"}:
+            failures[call.status].append(trace_cases.get(call.trace_id, active_case))
+    failures["safety"] = e7_failed
+    failures["extraction"] = [c.id for c in cases if c.expected.fp or c.expected.fn]
     score = ExtractionScore()
     for case in cases:
         score += case.expected
@@ -311,6 +373,10 @@ def _run_chat(
     report = JSON.validate_python(
         {
             "mode": "live_synthetic",
+            "ordering": "safety_first",
+            "failure_case_ids": {key: sorted(set(ids)) for key, ids in failures.items()},
+            "failure_totals": {key: len(set(ids)) for key, ids in failures.items()},
+            "total_traced_attempts": len(calls),
             "completed_patients": completed,
             "requested_patients": len(seeds),
             "days": days,
