@@ -1,197 +1,113 @@
 # Nof1
 
-P8's offline chat simulator and replay are available. Live cohort L evaluation
-and final held-out evaluation are **on hold until explicitly authorized**.
-The [hosted demo](https://nof1-frontend-196912573980.us-east4.run.app) is deployed
-on Cloud Run with Neon. Use synthetic demo history; do not enter real health
-information. The PowerShell procedure, smoke evidence, measured latency and
-Teardown instructions are in [DEPLOY.md](DEPLOY.md). P8 is not yet approved.
+Nof1 is a conversational N-of-1 experiment prototype for people tracking chronic
+symptoms. Chat becomes a structured timeline; deterministic statistics surface
+**possible lagged patterns**; a 14-day on/off test returns helped, worsened,
+no detectable effect, or inconclusive. It is not a diagnostic tool or medical advice.
 
-Offline replay (from `backend/`):
+## One-minute demo
 
-```sh
-uv run --offline --no-sync python -m sim.chat_cli replay ../evals/fixtures/chat/handwritten.json
+The hosted demo was torn down after the interview (owner-reported). Run locally,
+then use synthetic data only:
+
+1. **Load demo history** to see a seeded timeline and possible pattern.
+2. **Test this** on the eligible pattern.
+3. **Accept this plan** to confirm the protocol and its displayed start date.
+4. **Skip to end** to advance simulated days; inspect the verdict, sample size,
+   interval and limitation sentence.
+
+This demonstrates the workflow, not clinical effectiveness. Dates follow the demo
+clock and seeded history, so the start date may differ from today's date.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI[Next.js chat] --> API[FastAPI + safety gate]
+    API --> LLM[Typed LLM extraction]
+    LLM --> DB[(Postgres timeline)]
+    DB --> STATS[Deterministic stats + experiment rules]
+    STATS --> REPLY[Facts-only narration + output guard]
 ```
 
-For a later human-triggered live run, configure a verified `SIM_PERSONA` from a
-different model family than the extractor, then use `make eval-live` with an
-explicit positive `MAX_SPEND_USD` or `ARGS="--budget 0.50"`. `ARGS` also accepts
-`--persona provider:model`, `--extractor provider:model`, and `--output PATH`.
-Use a fresh output directory; runs are synthetic-only and delete their users.
-Unknown prices remain null and the token cap applies. Budget exhaustion produces
-a partial report, not a completed cohort. `make eval-final` additionally requires
-human P8 approval, a clean committed tree and an unused durable final-run marker;
-optional `--chat` enables the held-out chat cohort. Neither command runs in CI.
+Code owns state, budgets and calculations; the LLM extracts and phrases.
+The design includes fixed escalation, typed validation, bounded retries,
+read-only data tools and guarded replies. The evidence below shows its limits.
 
-A conversational N-of-1 self-tracking research prototype. It is not medical advice.
+## Evidence
 
-The product specification is in [PRD.md](PRD.md), working rules in
-[AGENTS.md](AGENTS.md), and progress in [STATUS.md](STATUS.md).
+**Blind safety rounds, before generalization:**
 
-## Local development
+| Check | Passed before fixes |
+|---|---:|
+| Red flags detected | 1/8 |
+| Bad replies blocked | 2/12 |
+| G7 unsupported-write claims blocked | 0/9 |
 
-Requires Python 3.11, uv, Node 20.19+ (or 22.13+), npm, and GNU Make.
-Docker supplies PostgreSQL 16 and the separate `nof1` and `nof1_test` databases.
+The failed probes were later folded into regression fixtures. Fixes after that
+are **in-sample**, not new blind evidence. Sources: [initial round](evals/safety/probe-run.json),
+[G7 round](evals/safety/probe-g7-run.json).
+
+**P8 live:** the separate safety-first run tested **25 cases: 2 failures and
+10 fallback cases** ([report](evals/reports/p8-live-2026-11-04/SUMMARY.md)).
+E4 is **PARTIAL**: **14 patients attempted, 9 completed 30 calendar days,
+4 dropped out, 1 cut off**; 16 never started. Observed micro-F1 was
+**0.8749704561569369**; cohort gates were **not evaluated**. It stopped on CLI
+2,000,000-token admission, including failed-call reservations and the next request,
+with 2,067 dispatches, below the $2/5,000 limits
+([partial report](evals/reports/p8-e4-run4-2026-11-04/SUMMARY.md)).
+
+**Offline final, once:** held-out synthetic statistics, 2,000 permutations,
+no chat/model generation. Null-pattern false positives **31/409 (7.58%)**;
+strong-effect recall **120/138 (86.96%)**; null decisive verdicts **18/300 (6.00%)**.
+At 30 days, strong-effect recall was only **50/138 (36.23%)**.
+[Final summary and provenance](evals/reports/final/SUMMARY.md).
+These statistics do not validate live extraction or clinical use.
+
+## Limitations
+
+- Unblinded and one person; no demonstrated clinical effectiveness.
+- Four usable days per arm give low power; day-to-day correlation and carryover
+  can affect verdicts. Short histories and synthetic diaries limit generalization.
+- Post-fix safety results are in-sample. Live safety failures and incomplete E4 remain.
+- Demo-clock dates and simulated history are not real patient follow-up.
+- Recorded narrator pricing is introductory through **December 31, 2026**;
+  verify rates before future use ([frozen pricebook](config/prices.yaml)).
+
+## Cost and lifecycle
+
+Calculated provider API costs for E4 runs 1-4:
+
+| Run | Known USD | Stop |
+|---|---:|---|
+| 1 | $0.12070975 | Infrastructure interruption / budget admission |
+| 2 | $0.01148250 | Ollama runner crash |
+| 3 | $0 | Warm-up schema mismatch |
+| 4 | $0.47159750 | CLI token budget |
+
+**Known E4 total: $0.60378975.** Exact spend is unknown because paid failures
+returned no usage; the conservative upper bound is **$1.65656575**, not a bill.
+Including the separate safety-first run ($0.01458975), recorded P8 known API cost
+is **$0.61837950** (upper bound **$1.67115550**).
+Cloud costs and earlier unpriced development calls are excluded.
+[Separate run records](evals/reports/p8-e4-runs-1-4-2026-11-05.md).
+A full-cohort planning allowance is roughly 6,900 attempts, above the unchanged
+5,000 ceiling. No new live run is authorized.
+
+## Run locally
+
+On a fresh checkout, copy `.env.example` to `.env`; configure verified routes/keys
+for chat and keep credentials out of git. Python 3.11, Node 20, uv, npm, Make and
+Docker are required.
 
 ```sh
 make setup
-# Copy .env.example to .env and configure local settings as needed.
 make db-up
 make migrate
-make gate PHASE=8
 make dev
 ```
 
-Backend: http://localhost:8000/health. Frontend: http://localhost:3000.
-P2 adds pure daily panels, hybrid exact/Monte Carlo lagged pattern scans, BH correction,
-confounder flags, experiment schedules, eligibility checks, and seeded bootstrap verdicts.
-P1 supplies validated domain records, PostgreSQL storage, name normalization, and timezone
-mapping. P4 supplies provider routing, budgets, traces, prompts, and deterministic
-safety checks; P5 adds the backend chat workflow. Tests use scripted
-LLM responses, block outbound sockets/DNS, and access only the local test database.
-
-P7 adds the cookie-scoped API and a mobile-first research journal. The demo load,
-simulated Next day and Skip to end controls run without LLM calls; the scheduled
-days endpoint supports corrections until the verdict is frozen. Run the full local
-stack with `docker compose build` and `docker compose up -d --wait`, then open
-http://localhost:3000. Hosted deployment remains human-operated; see [DEPLOY.md](DEPLOY.md).
-
-The storage suite requires an **empty** database whose name ends in `_test` and
-refuses a remote test host. It applies the migration, rolls each test back, then
-downgrades to an empty database. Never point `DATABASE_URL_TEST` at valuable data.
-The Compose initialization script creates `nof1_test` for a fresh volume. For a
-pre-existing volume without it, run
-`docker compose exec postgres createdb -U nof1 nof1_test` once.
-
-Dependencies are locked in `backend/uv.lock` and `frontend/package-lock.json`.
-The gate runs lint, strict type checks, and cumulative phase tests. It never
-downloads dependencies; run setup first. Live and final evaluations are manual.
-
-## Statistical limitations
-
-Observational results are possible patterns, not causes. The fixed experiment has
-four usable ON days and four OFF days at most, so power is low. Its day-level
-bootstrap ignores autocorrelation. The one-day washout assumes limited carryover;
-lag-two effects can contaminate later days. Results concern one person, and the
-experiment is not blinded. The larger P3 simulator evaluation appears below;
-P2's small seeded unit-test cohort is not a substitute for that evaluation.
-
-## Stats-only simulator results (P3)
-
-Run `make sim-stats` to evaluate A, A30, N, and V with both permutation budgets.
-Run `make eval-regression` to compare the fixed small cohorts against the initial
-baseline. Neither command calls an LLM or accesses held-out seeds.
-Regression also evaluates absolute E1/E2/E3 limits on full A/N cohorts at the fast
-permutation budget, independently of the small-cohort drift comparison.
-
-The [P3 report](evals/reports/p3-stats.md) and [JSON results](evals/reports/p3-stats.json)
-include every measured metric and the source digest. The revision identifies the
-checked-out parent; the digest identifies the P3 source snapshot committed with the report.
-
-- Fast/full E1: 0.0421 / 0.0553; E2: 0.8732 / 0.8944; E3: 0.0800 / 0.0800.
-  All three hard gates pass at both budgets.
-- Full-budget recall rises from 0.1282 at |beta|=1 to 0.8944 at |beta|=3 for
-  T=60. T=30 recall is much lower: 0.0192 and 0.3732 respectively.
-- Full-budget confounded-patient shares: flagged 15/113, unflagged 1/113.
-  The heuristic fires for most patients with a reported confounded exposure;
-  these flags are warnings, not causal adjustment.
-- Strong-effect experiments still return inconclusive in 65–66% of V cases,
-  illustrating the fixed protocol's limited usable sample size.
-
-The initial `evals/baselines/stats_baseline.json` is **human-approved in STATUS.md**.
-It was generated once under explicit authorization. Do not regenerate or modify it
-without a new explicit request.
-Its creation-time approval metadata remains unchanged; STATUS.md records the approval.
-Its smaller regression cohorts (A seeds 0–59 and N seeds 2000–2099) measured
-E1=0.1364, E2=0.7000, E3=0.1400. These are drift references; the full prescribed
-cohorts above determine the hard gates. The small subset is visibly noisier.
-
-## LLM infrastructure and safety (P4)
-
-Provider calls use `LLMRouter`, persisted per-attempt budgets and traces, and
-stored user data classification. DeepSeek is restricted to synthetic users.
-Missing model configuration fails with the purpose and model route; missing
-prices record null cost while token limits remain enforced. Set verified model
-routes in the environment and maintain verified rates in `config/prices.yaml`
-before any later, explicitly authorized live evaluation.
-
-Run `cd backend` then `uv run --offline --no-sync python -m sim.cli safety-regression`
-to score all P4 safety fixtures without a provider. The component joins
-`make eval-regression` after P4 human approval is recorded in STATUS.md.
-The [safety review guide](evals/safety/README.md) lists the files requiring review.
-
-## Chat workflow (P5)
-
-The backend orchestrator now handles typed extraction, onboarding, daily question
-priority, skipped questions, corrections, and mixed-intent messages. Questions
-and state updates are controlled by code. Data questions use a bounded read-only
-tool loop; medical requests receive the fixed refusal, and emergencies bypass
-extraction. Replies pass the output guard or use a fixed fallback.
-
-Per-user transaction locks prevent duplicate processing. Budget exhaustion keeps
-the message and deterministic pending answers while rolling back analyzer-driven
-updates. Migration 0003 stores bounded conversation progress in the existing
-conversation_state table. The API and frontend chat integration remain P7 work.
-
-The cumulative P5 gate includes 25 E7 adversarial FakeLLM cases, concurrency,
-SQL tracing, privacy, context limits, and repeated-run database cleanup checks.
-E7 joins `make eval-regression` after P5 human approval is recorded in STATUS.md.
-
-## Manual development chat
-
-Run `make chat` with `APP_ENV=dev`, a migrated local non-test PostgreSQL database,
-and verified Gemini routes and key in `.env`. This command makes real model calls
-under the configured token/spend caps. It creates a synthetic throwaway user,
-starts onboarding, and sends each input line through the normal orchestrator.
-Use EOF, Ctrl-C, or `/quit` to finish and delete the user's rows.
-
-Replies appear in the terminal alongside content-free `llm_calls` metadata,
-including validation/error status, usage, regeneration, and fallback flags.
-Error-row token reservations are marked estimated. Message text is not written
-to application logs. Other app environments, remote/test databases, non-Gemini
-routes, and unconfigured model placeholders are refused before any provider call.
-
-## Experiment loop (P6)
-
-Eligible tracked exposures can now be proposed and accepted with a confirmation.
-The fixed calendar starts tomorrow, with baseline and alternating ON/OFF blocks.
-Abandonment also requires confirmation. Dates advance with the user's local/demo
-clock; missed entries remain unknown, and late entries are accepted until completion.
-The verdict stores its own data snapshot and is unchanged by later rating corrections.
-
-Changed completed check-ins/checklists trigger scans. Pattern identity, sign/tier
-changes, and a three-day cooldown control surfacing. Each surfaced row preserves
-its evidence; structured evidence links are ready for the P7 UI. Daily narration
-keeps the scheduled label and washout wording, and verdicts include sample sizes
-and a limitation sentence even when generation falls back.
-
-The offline integration checks the pinned demo seed through insight, proposal,
-acceptance, and 14 simulated days; its planted effect returns helped. The first
-null-cohort control does not return helped. These examples complement the larger
-P3 evaluation; they do not establish universal power or a zero false-positive rate.
-
-The analyzer uses JSON generation with full Pydantic validation after a live bisect
-isolated a provider grammar failure. Persistence acknowledgements require typed,
-named receipts, and counts must match those receipts. Bare ratings and latest-date
-lookups use deterministic replies; provider failures ask the user to retry later.
-The [diagnostic report](evals/reports/chat_diagnosis_2026-10-31.md) records the live
-synthetic smoke evidence. Automated gates remain offline with FakeLLM and deterministic simulation.
-
-## Partial E4 evaluation (P8)
-
-The [run-4 report](evals/reports/p8-e4-run4-2026-11-04/SUMMARY.md) is **PARTIAL**:
-nine patients reached all 30 calendar days, four dropped out, one was cut off on
-day 15, and sixteen never started. Raw metrics include all observed turns;
-pre-registered cohort gates were not evaluated because the cohort is incomplete.
-The [four-run record](evals/reports/p8-e4-runs-1-4-2026-11-05.md) preserves each
-infrastructure/runner/budget stop and its actual-cost uncertainty separately.
-
-A full 30-patient cohort needs roughly **6,900 generation attempts** as a planning
-allowance, above the frozen **5,000-call ceiling** by about **1,900**. This is an
-approximate human-specified capacity estimate, not a measured complete-cohort
-result; dropout, missingness, follow-ups and retries change actual demand.
-Run 4 hit the separate CLI `MAX_TOTAL_TOKENS=2,000,000` admission guard first,
-while still below its $2.00 and 5,000-call limits. Failed-call token reservations
-and the next request count toward token admission. No limits, thresholds or
-baseline were changed, and no new run was authorized by this report. P8 remains
-unapproved; final held-out evaluation has not run.
+Open http://localhost:3000. `make gate PHASE=9` runs offline checks.
+Do not rerun the consumed final evaluation. See [DEPLOY.md](DEPLOY.md) for the
+historical deployment, local containers and teardown guide; [PRD.md](PRD.md)
+and [STATUS.md](STATUS.md) contain the specification and full evidence log.

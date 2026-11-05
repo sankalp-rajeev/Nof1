@@ -1,0 +1,76 @@
+{
+  "phase": "P9",
+  "command": "make eval-final",
+  "invocations": 1,
+  "exit_code": 0,
+  "chat_requested": false,
+  "new_generation_calls": 0,
+  "api_cost_usd": "0",
+  "revision": "b0646f590d2bb4333048b7698095c221418c5331",
+  "source_digest": "2788c3296c4364524a38fcdc358f57bd0e19257d82b82c8a6127644e73a379c4",
+  "cohorts": {
+    "A": {
+      "days": 60,
+      "first_seed": 10000,
+      "last_seed": 10999,
+      "n": 1000
+    },
+    "A30": {
+      "days": 30,
+      "first_seed": 10000,
+      "last_seed": 10999,
+      "n": 1000
+    },
+    "N": {
+      "days": 14,
+      "first_seed": 10000,
+      "last_seed": 10299,
+      "n": 300
+    },
+    "V": {
+      "days": 14,
+      "first_seed": 10300,
+      "last_seed": 10699,
+      "n": 400
+    }
+  },
+  "n_perm": 2000,
+  "raw_artifact_sha256": {
+    "STARTED.json": "8788a4e5705587b185e691c69f25377a4c0737630d30567b9bb8f6b8f6c3768f",
+    "p3-stats.json": "ce84b6ed704e91e3682050320a0b3a6b43ac7d38014b7ec4c0ca09984802dd36",
+    "p3-stats.md": "baea8c149bb4963c511940e4a727719363a174ce1984ee3863d28e5c1d26c088"
+  },
+  "frozen_sha256": {
+    "backend/app/agent/prompts/composer_answer.md": "2356dfffb362b0178cf6175c5ad1b56cfed6c371ddd7a4b1df2b76da4e6b45ee",
+    "backend/app/agent/prompts/composer_checkin.md": "1a3ddb148a70bfd1a6ad8f7b55d4059be536e390848d7af6e230dc7a4e6f09ea",
+    "backend/app/agent/prompts/composer_experiment.md": "84f9cc19a2d17c60c7d0d5279db9cd5a0c4fbbb5035f9dc0d402a3d5858f6836",
+    "backend/app/agent/prompts/composer_insight.md": "a8f3d4e8da3a6d00dd4f61842c74a67252ba53afad9c5b919b01f0605e213472",
+    "backend/app/agent/prompts/judge_safety.md": "0d8d7f806928be33065c276c8ab5a9680c358a30f8479e3c0cc0a2e1c9d2bb74",
+    "backend/app/agent/prompts/persona_render.md": "c2491ac9d4801f12bfa821a79dfa2e1d364ddb97a546451eeb9c944d8f994a8d",
+    "backend/app/agent/prompts/turn_analyzer.md": "c2a1bb95120406899b495925a229e76ae50a57df1d422140ec0175b3ff86017e",
+    "backend/app/agent/safety/__init__.py": "0b59a3ccd142bf0387b66580b8979f89d25bd4898b07516746049623d991c774",
+    "backend/app/agent/safety/config.py": "20c2ac7fc68c872c139687868665c086a16b77b52d82df4916696ddb9ea20c49",
+    "backend/app/agent/safety/evaluation.py": "2e788500ec255feb7ff20409fbec212d5c38634a5d842aa0244432427c0c3a30",
+    "backend/app/agent/safety/inbound.py": "607ee55f37cf2afff8fe0bac6f1aa9808f3bd1233d4b2c0965aa8c6c624cc119",
+    "backend/app/agent/safety/output_guard.py": "a3f103ca84c26ecc1fef825b32e6ebb7dca5c59474fa12580f61daad5046dee6",
+    "backend/app/agent/safety/templates.py": "616b1d03eafabc7874455c9234e3d89f30026f080cbae4f1806965182f800162",
+    "evals/safety/adversarial_dx.jsonl": "fe9e3fbb0a361dd6b475b7877e86968092be9c89bc6049e7e4700a79b7167442",
+    "evals/safety/benign.jsonl": "b6926e7d35eaeb05d1fdd087b7d311edffb672012a47d0e6dce71b68e41a7597",
+    "evals/safety/guard_bad_replies.jsonl": "32a8fc52947609d39b67b360959a2176ccaa4d8ce491d04b303e59229de1c3dc",
+    "evals/safety/guard_good_replies.jsonl": "65a7267489f8fe61382bf08a9911a9310fea2d9aa988327f85e2207ff568406a",
+    "evals/safety/red_flags.jsonl": "57d072b0ef9357556a4946fbfb034682b28c42b9ed6bd5814ba130e2627433dc",
+    "evals/baselines/stats_baseline.json": "8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257"
+  },
+  "all_19_frozen_hashes_match": true,
+  "baseline_modified": false,
+  "hard_gate_failures": [],
+  "legacy_writer_labels_annotated": true,
+  "offline_gate": {
+    "command": "make gate PHASE=9",
+    "exit_code": 0,
+    "backend_tests_passed": 630,
+    "frontend_tests_passed": 23,
+    "gate_log_sha256": "1678bacda7262f89f8ae4fbefe7a2fe83a5ae2dd5f84dd9e1169fa98765f8d6a"
+  },
+  "documentation_audit_passed": true
+}

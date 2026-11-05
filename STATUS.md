@@ -16,8 +16,8 @@ not started. CLI total-token admission stopped it before the $2/5,000 limits.
 Run 4 known actual API cost: $0.47159750; exact total unknown; unsettled hold
 $0.263344; total conservative upper bound $0.73494150. Pre-registered cohort
 gates were not evaluated because the cohort is incomplete. Exactly one offline
-stats-only make eval-final is now authorized; no new live evaluation, model
-generation or held-out chat is authorized. CURRENT remains P9.
+stats-only make eval-final has completed; its authorization is consumed. No new
+live evaluation, model generation or held-out chat is authorized. CURRENT remains P9.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -32,7 +32,7 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P6 | Experiment loop | [x] | [x] |
 | P7 | API and frontend | [x] | [x] |
 | P8 | Chat-mode simulation and live evals | [x] | [x] |
-| P9 | Deploy and polish | [ ] | [ ] |
+| P9 | Deploy and polish | [x] | [ ] |
 
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
@@ -60,6 +60,78 @@ Preserve its generated files as evidence; add a clearly labeled final summary
 using the JSON cohort ranges rather than silently rewriting the raw artifact.
 README teardown status will be attributed to the human's report; no cloud
 teardown or hosted smoke is performed in this phase.
+
+Offline final executed exactly once: make eval-final exited 0 without --chat.
+STARTED.json: revision b0646f590d2bb4333048b7698095c221418c5331,
+chat_requested=false, unused budget=0.01. API/model calls: 0; API cost $0.
+Full N_PERM=2,000. A/A30: seeds 10,000–10,999, n=1,000, T=60/30;
+N: 10,000–10,299, n=300; V: 10,300–10,699, n=400 (50 per cell).
+
+Final summary (from the generated JSON/Markdown, with correct final scope):
+
+```text
+E1 null false-positive share: 0.0758 (31/409)
+E2 recall at |beta|=3: 0.8696 (120/138)
+E3 null decisive verdict share: 0.0600 (18/300)
+Offline statistical hard_gate_failures: []
+E2b T=30, |beta|=3: 0.3623 (50/138)
+E1c any/flagged/unflagged: 19/105, 18/105, 1/105
+V completeness min/median/max: 0.000 / 0.625 / 1.000
+```
+
+Complete power curves, confounding shares, verdict matrix and completeness
+distribution: evals/reports/final/p3-stats.json and final/SUMMARY.md. The
+shared writer's legacy P3/no-held-out labels are explicitly annotated,
+not silently edited. Raw output hashes are in final/verification.json;
+all 19 frozen inputs and the source digest match. No code, threshold,
+prompt, rule, dataset or baseline changed, and the final run was not repeated.
+The complete offline statistics do not turn partial P8 live E4 into a
+completed cohort result or erase blind/live safety failures.
+
+
+Offline P9 gate [x]: make gate PHASE=9 exited 0. Lint, format and Python/
+frontend type checks passed; 630 backend and 23 frontend tests passed.
+No new live evaluation or generation. The documentation audit verified
+README headings, exact demo buttons, relative links, safety counts, cost
+arithmetic and secret patterns. All 19 frozen hashes, raw final artifacts
+and the source digest still match; baseline and application code unchanged.
+DECISIONS.md records the one-shot offline scope and evidence/cost distinctions.
+P9 awaits human review; no stretch work or new evaluation is authorized.
+
+Last 30 lines of the successful gate output:
+
+```text
+tests\test_sim_scoring.py .........                                      [ 86%]
+tests\test_sim_world.py ......                                           [ 87%]
+tests\test_stats_experiment.py ......................                    [ 91%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 95%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 630 passed, 1 warning in 154.02s (0:02:34) ==================
++ npm.cmd run test -- -t \[p[0-9]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-9]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  01:25:37
+   Duration  2.41s (environment 72%, setup 15%, tests 11%, transform 1%, import 1%)
+
+P9 gate PASS
+```
 
 ### P8 partial E4 report and budget forensics (2026-11-05)
 

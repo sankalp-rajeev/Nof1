@@ -1,9 +1,15 @@
 # Deployment
 
+Lifecycle update, 2026-11-05: the owner reports that the hosted deployment was
+torn down after the interview. URLs and revisions below are historical evidence,
+not a claim of a currently available demo. No cloud state was independently
+queried or changed for P9; use the local demo instructions in README.md.
+
 Cloud provisioning, image builds, deployment and teardown commands are human-operated.
 The agent ran the requested no-LLM hosted latency measurement after the human
 deployed the services. Partial local E4 evaluations are now recorded below;
-no final held-out evaluation has run.
+the once-only P9 offline held-out statistics are recorded in
+[the final summary](evals/reports/final/SUMMARY.md). No held-out chat was run.
 
 ## Deployed setup
 
@@ -399,11 +405,11 @@ and [runtime account deletion](https://docs.cloud.google.com/sdk/gcloud/referenc
 
 ## Remaining phase work
 
-P8 is **not yet approved**. E4-only runs 1 through 4 stopped for infrastructure,
+P9 is authorized with the recorded P8 limitations. E4-only runs 1 through 4 stopped for infrastructure,
 runner-validation or budget reasons. The [run-4 report](evals/reports/p8-e4-run4-2026-11-04/SUMMARY.md)
 is PARTIAL: the cohort is incomplete, so pre-registered cohort gates were not
-evaluated. Deployment and demo smoke do not approve P8 or start P9. Final
-held-out evaluation remains unexecuted; no new run is authorized here.
+evaluated. The once-only offline final evaluation is recorded separately; it
+does not establish a full live-cohort result. No new live run is authorized here.
 
 Capacity planning for a full 30-patient cohort needs roughly **6,900 generation
 attempts**, above the existing **5,000-call ceiling** by about **1,900**. This is

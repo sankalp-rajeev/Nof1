@@ -1,0 +1,4 @@
+# Keep the original generated evidence byte-for-byte across checkout platforms.
+/STARTED.json -text whitespace=cr-at-eol
+/p3-stats.json -text whitespace=cr-at-eol
+/p3-stats.md -text whitespace=cr-at-eol
