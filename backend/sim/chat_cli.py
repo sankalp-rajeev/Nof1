@@ -82,6 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     live.add_argument("--max-calls", type=int, default=LIVE_MAX_CALLS)
     live.add_argument("--e4-only", action="store_true", help="Separate authorized cohort-only run")
     live.add_argument("--e4-run2", action="store_true", help="Fresh separately authorized E4 run 2")
+    live.add_argument("--e4-run3", action="store_true", help="Fresh separately authorized E4 run 3")
     live.add_argument("--patients", type=int, default=len(COHORT_L), choices=range(1, 31))
     live.add_argument("--days", type=int, default=CHAT_DAYS, choices=range(1, CHAT_DAYS + 1))
     live.add_argument("--output", type=Path, default=ROOT / "evals/reports/p8-live")
@@ -100,11 +101,16 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     budget = require_budget(args.budget)
-    if args.e4_run2 and (
+    if args.e4_run2 and args.e4_run3:
+        raise ValueError("Choose exactly one E4 run authorization")
+    separate_e4_run = args.e4_run2 or args.e4_run3
+    if separate_e4_run and (
         not args.e4_only or args.patients != len(COHORT_L) or args.days != CHAT_DAYS
     ):
-        raise ValueError("E4 run 2 requires E4-only scope and the full 30-patient, 30-day cohort")
-    ceiling = Decimal(E4_RUN2_MAX_SPEND_USD) if args.e4_run2 else Decimal("1.00")
+        raise ValueError(
+            "Separate E4 runs require E4-only scope and the full 30-patient, 30-day cohort"
+        )
+    ceiling = Decimal(E4_RUN2_MAX_SPEND_USD) if separate_e4_run else Decimal("1.00")
     if Decimal(str(budget)) > ceiling or not 0 < args.max_calls <= LIVE_MAX_CALLS:
         raise ValueError(f"Authorized live ceilings: ${ceiling} and 5000 dispatch attempts")
     if os.environ.get("DATA_CLASS") != "synthetic":
@@ -121,7 +127,9 @@ def main(argv: list[str] | None = None) -> int:
         # A fixed claim prevents accidentally consuming this authorization twice,
         # even with a different output argument or after an interrupted process.
         authorization = authorization_claim(e4_only=args.e4_only)
-        if args.e4_run2:
+        if args.e4_run3:
+            authorization = authorization.with_name(authorization.name + "-run-3")
+        elif args.e4_run2:
             authorization = authorization.with_name(authorization.name + "-run-2")
         claim_run(authorization)
         claim_run(args.output)
@@ -130,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
             args.output / "ledger.json",
             max_calls=args.max_calls,
             cap=Decimal(str(budget)),
-            e4_run2=args.e4_run2,
+            e4_run2=separate_e4_run,
         )
         router = LimitedRouter(settings, store=SQLTraceStore(engine), prices=limits.prices)
         router.tape = []
@@ -157,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
             "ollama_base_url": settings.ollama_base_url,
             "evaluation_scope": "E4_only" if args.e4_only else "safety_then_cohort",
             "safety_cases_enabled": not args.e4_only,
-            "e4_run": 2 if args.e4_run2 else None,
+            "e4_run": 3 if args.e4_run3 else 2 if args.e4_run2 else None,
             "patients": args.patients,
             "days": args.days,
             "pricebook": (ROOT / "config/prices.yaml").read_text(encoding="utf-8"),

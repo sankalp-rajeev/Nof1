@@ -7,8 +7,9 @@ The original safety-first evaluation is preserved separately. E4-only runs 1 and
 are classified as aborted infrastructure failures, with partial results retained.
 Run 1: 570 attempts, $0.12070975 known actual API cost; exact total unknown, with
 $0.91014175 conservative upper bound. Run 2: 58 attempts, $0.01148250 exact API cost.
-All prior run authorizations are consumed. Recovery repair uses no new generation;
-run 3 requires separate human authorization. CURRENT remains P8.
+Runs 1 and 2 remain consumed. The human has approved one fresh E4-only run 3
+after the authorization-only patch passes the gate and is committed/pushed.
+No generation occurs before those checks. CURRENT remains P8.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -28,6 +29,62 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P8 run-3 authorization only (2026-11-04)
+
+Deliverables:
+- Add --e4-run3 with its own immutable one-shot marker and the existing $2/5,000 caps.
+- Require E4-only scope and the full 30-patient, 30-day cohort; retain prior claims.
+- Test repeated/different-output rejection and preservation of run-1/run-2 markers.
+- Pass the offline P8 gate and commit/push; verify frozen inputs and record revision.
+- Launch detached once, then stop without monitoring; report after human completion notice.
+
+Only CLI authorization selection changes; retry, keep-alive, warm-up, evaluation,
+prompts, rules, datasets and baseline remain identical to 2791357. New p8 tests
+exercise authorization with mocked cohort execution and no generation/network.
+The fixed marker is evals/reports/p8-authorized-e4-2026-11-04-run-3/STARTED.json;
+changing --output cannot reuse it. Prior markers remain intact. --e4-run2 and
+--e4-run3 are mutually exclusive. This entry records authorization before launch;
+results and final reconciliation await the human's completion notice.
+
+Run-3 authorization gate [x]: make gate PHASE=8 exited 0; 603 backend tests and
+23 frontend tests passed, with lint/format/type checks. Existing tests and
+thresholds are unchanged. No live generation occurred.
+
+Gate output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 86%]
+tests\test_sim_world.py ......                                           [ 87%]
+tests\test_stats_experiment.py ......................                    [ 91%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 95%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 603 passed, 1 warning in 152.66s (0:02:32) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  20:53:45
+   Duration  1.91s (environment 68%, setup 15%, tests 14%, transform 1%, import 1%)
+
+P8 gate PASS
+```
 
 ### P8 infrastructure recovery repair (2026-11-04)
 
