@@ -7,8 +7,9 @@ no detectable effect, or inconclusive. It is not a diagnostic tool or medical ad
 
 ## One-minute demo
 
-The hosted demo was torn down after the interview (owner-reported). Run locally,
-then use synthetic data only:
+Hosted demo: https://nof1-frontend-196912573980.us-east4.run.app/ (spend-capped; will be torn down shortly after the interview to avoid ongoing cost; after that, use the local steps below).
+
+Use synthetic data only:
 
 1. **Load demo history** to see a seeded timeline and possible pattern.
 2. **Test this** on the eligible pattern.
@@ -49,10 +50,14 @@ are **in-sample**, not new blind evidence. Sources: [initial round](evals/safety
 [G7 round](evals/safety/probe-g7-run.json).
 
 **P8 live:** the separate safety-first run tested **25 cases: 2 failures and
-10 fallback cases** ([report](evals/reports/p8-live-2026-11-04/SUMMARY.md)).
+10 fallback cases** ([report](evals/reports/p8-live-2026-11-04/SUMMARY.md)); both
+safety failures are classified as the G1 guard flagging the fixed escalation reply,
+not a missed escalation (reconstructed from saved fallback paths; original replies
+not retained).
 E4 is **PARTIAL**: **14 patients attempted, 9 completed 30 calendar days,
 4 dropped out, 1 cut off**; 16 never started. Observed micro-F1 was
-**0.8749704561569369**; cohort gates were **not evaluated**. It stopped on CLI
+**0.875**, measuring event extraction against synthetic ground truth; cohort gates
+were **not evaluated**. It stopped on CLI
 2,000,000-token admission, including failed-call reservations and the next request,
 with 2,067 dispatches, below the $2/5,000 limits
 ([partial report](evals/reports/p8-e4-run4-2026-11-04/SUMMARY.md)).
@@ -93,6 +98,12 @@ Cloud costs and earlier unpriced development calls are excluded.
 [Separate run records](evals/reports/p8-e4-runs-1-4-2026-11-05.md).
 A full-cohort planning allowance is roughly 6,900 attempts, above the unchanged
 5,000 ceiling. No new live run is authorized.
+
+## Next steps
+
+- Complete E4 with a larger-capacity persona route and checkpointing.
+- Run a fresh blind safety round.
+- Run a real-user pilot with consent.
 
 ## Run locally
 
