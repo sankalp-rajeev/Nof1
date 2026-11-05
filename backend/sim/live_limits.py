@@ -12,7 +12,12 @@ from pydantic import BaseModel
 from app.agent.llm.base import CallContext, LLMClient, LLMMessage, LLMResponse
 from app.agent.llm.cost import BudgetExceeded, PriceBook
 from app.agent.llm.openai_compat import OpenAICompatClient
-from sim.config import GEMINI_MAX_INPUT_TOKENS, LIVE_MAX_CALLS
+from sim.config import (
+    E4_RUN2_MAX_SPEND_USD,
+    GEMINI_MAX_INPUT_TOKENS,
+    LIVE_MAX_CALLS,
+)
+from sim.ollama_recovery import OllamaPersonaClient, PersonaRecovery, SingleAttemptPersona
 from sim.replay import RecordingClient, RecordingRouter
 
 
@@ -34,8 +39,10 @@ class LiveLimits:
         *,
         max_calls: int = LIVE_MAX_CALLS,
         cap: Decimal = Decimal("1.00"),
+        e4_run2: bool = False,
     ) -> None:
-        if not 0 < max_calls <= LIVE_MAX_CALLS or not Decimal(0) < cap <= Decimal("1.00"):
+        ceiling = Decimal(E4_RUN2_MAX_SPEND_USD) if e4_run2 else Decimal("1.00")
+        if not 0 < max_calls <= LIVE_MAX_CALLS or not Decimal(0) < cap <= ceiling:
             raise ValueError("Live limits must be positive and within authorized ceilings")
         self.prices, self.path, self.max_calls, self.cap = prices, path, max_calls, cap
         self.case_id = "preflight"
@@ -171,6 +178,31 @@ class LimitedClient:
 class LimitedRouter(RecordingRouter):
     limits: LiveLimits
     persona_timeout_s: float | None = None
+    persona_recovery: PersonaRecovery | None = None
+
+    def generate(
+        self,
+        messages: Sequence[LLMMessage],
+        *,
+        schema: type[BaseModel] | None = None,
+        max_tokens: int,
+        temperature: float = 0,
+        ctx: CallContext,
+    ) -> LLMResponse:
+        dispatch = super().generate
+
+        def attempt() -> LLMResponse:
+            return dispatch(
+                messages, schema=schema, max_tokens=max_tokens, temperature=temperature, ctx=ctx
+            )
+
+        if (
+            ctx.purpose == "persona"
+            and self.settings.sim_persona.startswith("ollama:")
+            and self.persona_recovery is not None
+        ):
+            return self.persona_recovery.generate(attempt, self.sleep)
+        return attempt()
 
     def _client(self, provider: str, model: str) -> LLMClient:
         client = super()._client(provider, model)
@@ -183,8 +215,17 @@ class LimitedRouter(RecordingRouter):
                 and isinstance(client.client, OpenAICompatClient)
             ):
                 # Eval-only cold-start allowance. Preserve SDK retry and request settings.
-                client.client = OpenAICompatClient(
-                    client.client.client.with_options(timeout=self.persona_timeout_s), model
+                sdk = client.client.client.with_options(timeout=self.persona_timeout_s)
+                client.client = (
+                    OllamaPersonaClient(sdk, model)
+                    if self.persona_recovery is not None
+                    else OpenAICompatClient(sdk, model)
                 )
+            if (
+                provider == "ollama"
+                and f"{provider}:{model}" == self.settings.sim_persona
+                and self.persona_recovery is not None
+            ):
+                client.client = SingleAttemptPersona(client.client)
             client.client = LimitedClient(client.client, self.limits, f"{provider}:{model}")
         return client

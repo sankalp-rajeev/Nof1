@@ -1,0 +1,46 @@
+{
+  "run": 1,
+  "classification": "aborted_infrastructure_failure",
+  "cause": "human_reported_laptop_shutdown_under_sustained_gpu_load",
+  "evidence_note": "Human reports laptop shutdown. Original paid-call error code was not retained; preserve the observed spend-admission stop rather than claim a proven causal link.",
+  "original_runner_stop": "budget_exhausted",
+  "original_ledger_stop": "spend_admission_cap",
+  "actual_dispatch_attempts": 570,
+  "attempt_status_counts": {
+    "returned": 569,
+    "provider_error": 1
+  },
+  "route_counts": {
+    "ollama:gemma3:12b": 290,
+    "gemini:gemini-3.1-flash-lite": 279,
+    "gemini:gemini-3.8-flash": 1
+  },
+  "known_actual_api_cost_usd": "0.12070975",
+  "exact_actual_api_cost_usd": null,
+  "unknown_cost_attempts": [
+    569
+  ],
+  "unsettled_reservation_usd": "0.789432",
+  "conservative_cost_upper_bound_usd": "0.91014175",
+  "completed_patients_including_dropouts": 3,
+  "requested_patients": 30,
+  "turns": 126,
+  "partial_E4": {
+    "tp": 445,
+    "fp": 87,
+    "fn": 68,
+    "f1": 0.8516746411483254
+  },
+  "full_cohort_pass": false,
+  "new_generation_calls_for_repair_or_report": 0,
+  "resumed_or_merged": false,
+  "original_evidence_sha256": {
+    "assessment.json": "c2efb71be5bea603d792e2ea76461e4b24587a3179dd3e71f506981595853cdb",
+    "configuration.json": "b9ceebb644fec149dc2e16f5caaae6ee50dc2b1f871b0e15e872f8864de5f519",
+    "ledger.json": "31c627642e5dca683d8e960d63acaf6d71f6bfc6a3ec3ded3fb986bb69323ab2",
+    "report.json": "9cae4bf712098ff381998d02f29999d984cb1d484719f5da571fa2056b6b5135",
+    "STARTED.json": "19c1c6808c15baa691ed5f0c9786a44304811a7f2c04c8ceb6deda86e2fea4a5",
+    "SUMMARY.md": "0a9d2a72db07e738e519da928173b5c1e0c89eb66392171c132ac030bf21f6a0",
+    "verification.json": "647551826f79d14e3d70a5db46fda48c2b7bf3cff73b622ab3e957ab6ec476ea"
+  }
+}

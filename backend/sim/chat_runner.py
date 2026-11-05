@@ -25,6 +25,7 @@ from app.domain.schemas import ExposureChecklist, Pending, UserInput
 from sim.config import ADHERENCE_P, CHAT_DAYS, COHORT_L, EXPOSURES, MAX_FOLLOWUPS, OUTCOME
 from sim.extraction import ExtractionScore, Label
 from sim.live_limits import LiveLimits
+from sim.ollama_recovery import warmup_persona
 from sim.personas import mention_plan, observed_events, participation, persona_card, persona_reply
 from sim.render import render
 from sim.replay import RecordingRouter, ReplayBundle, ReplayCase, replay_case, score_dict
@@ -110,6 +111,7 @@ def run_chat(
     router: RecordingRouter | None = None,
     include_e7: bool = True,
     limits: LiveLimits | None = None,
+    warmup_persona_enabled: bool = False,
 ) -> tuple[dict[str, JsonValue], ReplayBundle]:
     created_users: list[UUID] = []
     try:
@@ -122,6 +124,7 @@ def run_chat(
             include_e7=include_e7,
             created_users=created_users,
             limits=limits,
+            warmup_persona_enabled=warmup_persona_enabled,
         )
     finally:
         # Preserve all trace rows until the last call: CLI budget reservations
@@ -143,6 +146,7 @@ def _run_chat(
     include_e7: bool,
     created_users: list[UUID],
     limits: LiveLimits | None,
+    warmup_persona_enabled: bool,
 ) -> tuple[dict[str, JsonValue], ReplayBundle]:
     if days < 1 or days > CHAT_DAYS:
         raise ValueError("Chat evaluation supports 1..30 days")
@@ -162,6 +166,8 @@ def _run_chat(
     renders = render_fallbacks = dropped = bounded = 0
     completed = 0
     stopped: str | None = None
+    provider_failure_reason: str | None = None
+    warmup_completed = False
     active_case = "preflight"
     trace_cases: dict[UUID, str] = {}
     failures: dict[str, list[str]] = defaultdict(list)
@@ -241,6 +247,20 @@ def _run_chat(
                 capture_calls(uid)
     safety_calls = len(calls)
     try:
+        if stopped is None and warmup_persona_enabled:
+            set_case("persona_warmup")
+            warmup_uid = new_user()
+            warmup_trace = uuid4()
+            trace_cases[warmup_trace] = active_case
+            try:
+                warmup_persona(
+                    router, CallContext("persona", "synthetic", warmup_uid, warmup_trace)
+                )
+                warmup_completed = True
+            finally:
+                capture_calls(warmup_uid)
+                # Keep successful and failed warm-up latency out of cohort E8.
+                safety_calls = len(calls)
         for seed in () if stopped is not None else seeds:
             world = generate_world(seed, days=days)
             calendar = list(world.days)
@@ -345,9 +365,10 @@ def _run_chat(
     except BudgetExceeded:
         failures["incomplete"].append(active_case)
         stopped = "budget_exhausted"
-    except ProviderError:
+    except ProviderError as error:
         failures["provider_error"].append(active_case)
         stopped = "provider_failure"
+        provider_failure_reason = error.code
 
     e8 = latency_report(
         calls[safety_calls:],
@@ -382,6 +403,8 @@ def _run_chat(
             "days": days,
             "turns": turns,
             "stopped": stopped,
+            "provider_failure_reason": provider_failure_reason,
+            "persona_warmup_completed": warmup_completed,
             "dropouts": dropped,
             "followup_bound_hits": bounded,
             "E4": score_dict(score) if turns else None,

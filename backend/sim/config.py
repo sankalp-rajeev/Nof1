@@ -31,7 +31,11 @@ MAX_FOLLOWUPS = 8
 RENDER_ATTEMPTS = 3
 RENDER_MAX_CHARS = 1200
 LIVE_MAX_CALLS = 5000
+E4_RUN2_MAX_SPEND_USD = "2.00"
 E4_PERSONA_TIMEOUT_S = 120.0
+E4_PERSONA_KEEP_ALIVE = "24h"
+E4_PERSONA_RETRY_WAITS_S = (45.0, 45.0, 45.0, 45.0)
+E4_READINESS_TIMEOUT_S = 3.0
 E4_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1"
 # Documented model input limits, including full system/schema input. Reservations
 # deliberately avoid the production router's approximate character/token estimate.

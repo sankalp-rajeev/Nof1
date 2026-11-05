@@ -1,0 +1,17 @@
+{
+  "revision": "18efa7b7a34809193f2c1f470eafb21e8108dfe3",
+  "source_digest": "db8c4141d2dadf35319664870110d19f11657f25ba090d20accc5406472c01ba",
+  "persona": "ollama:gemma3:12b",
+  "analyzer": "gemini:gemini-3.1-flash-lite",
+  "composer": "gemini:gemini-3.1-flash-lite",
+  "narrator": "gemini:gemini-3.8-flash",
+  "max_output_tokens": 800,
+  "llm_timeout_s": 20.0,
+  "persona_timeout_s": 120.0,
+  "ollama_base_url": "http://127.0.0.1:11434/v1",
+  "evaluation_scope": "E4_only",
+  "safety_cases_enabled": false,
+  "patients": 30,
+  "days": 30,
+  "pricebook": "# Human-maintained USD per million tokens. Missing prices mean cost = null.\n# Human approved 2026-11-04. Standard text rates, output includes thinking.\n# https://aistudio.google.com/docs/pricing\n# Flash introductory rates expire 2026-12-31; live harness rejects expired rates.\ngemini:gemini-3.1-flash-lite:\n  input: 0.25\n  output: 1.50\ngemini:gemini-3.8-flash:\n  input: 0.75\n  output: 3.75\n# Local inference has no provider API charge (excludes electricity/hardware).\nollama:gemma3:12b:\n  input: 0\n  output: 0\n"
+}

@@ -19,10 +19,14 @@ from sim.config import (
     CHAT_DAYS,
     COHORT_L,
     E4_OLLAMA_BASE_URL,
+    E4_PERSONA_KEEP_ALIVE,
+    E4_PERSONA_RETRY_WAITS_S,
     E4_PERSONA_TIMEOUT_S,
+    E4_RUN2_MAX_SPEND_USD,
     LIVE_MAX_CALLS,
 )
 from sim.live_limits import LimitedRouter, LiveLimits, claim_run
+from sim.ollama_recovery import PersonaRecovery, ollama_ready
 from sim.replay import ReplayBundle, replay_bundle, score_dict
 
 
@@ -77,6 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     live.add_argument("--extractor")
     live.add_argument("--max-calls", type=int, default=LIVE_MAX_CALLS)
     live.add_argument("--e4-only", action="store_true", help="Separate authorized cohort-only run")
+    live.add_argument("--e4-run2", action="store_true", help="Fresh separately authorized E4 run 2")
     live.add_argument("--patients", type=int, default=len(COHORT_L), choices=range(1, 31))
     live.add_argument("--days", type=int, default=CHAT_DAYS, choices=range(1, CHAT_DAYS + 1))
     live.add_argument("--output", type=Path, default=ROOT / "evals/reports/p8-live")
@@ -95,8 +100,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     budget = require_budget(args.budget)
-    if budget > 1 or not 0 < args.max_calls <= LIVE_MAX_CALLS:
-        raise ValueError("Authorized live ceilings: $1.00 and 5000 dispatch attempts")
+    if args.e4_run2 and (
+        not args.e4_only or args.patients != len(COHORT_L) or args.days != CHAT_DAYS
+    ):
+        raise ValueError("E4 run 2 requires E4-only scope and the full 30-patient, 30-day cohort")
+    ceiling = Decimal(E4_RUN2_MAX_SPEND_USD) if args.e4_run2 else Decimal("1.00")
+    if Decimal(str(budget)) > ceiling or not 0 < args.max_calls <= LIVE_MAX_CALLS:
+        raise ValueError(f"Authorized live ceilings: ${ceiling} and 5000 dispatch attempts")
     if os.environ.get("DATA_CLASS") != "synthetic":
         raise ValueError("Live evaluation requires DATA_CLASS=synthetic")
     settings = live_settings(budget, args.persona, args.extractor)
@@ -110,19 +120,26 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # A fixed claim prevents accidentally consuming this authorization twice,
         # even with a different output argument or after an interrupted process.
-        claim_run(authorization_claim(e4_only=args.e4_only))
+        authorization = authorization_claim(e4_only=args.e4_only)
+        if args.e4_run2:
+            authorization = authorization.with_name(authorization.name + "-run-2")
+        claim_run(authorization)
         claim_run(args.output)
         limits = LiveLimits(
             PriceBook.load(),
             args.output / "ledger.json",
             max_calls=args.max_calls,
             cap=Decimal(str(budget)),
+            e4_run2=args.e4_run2,
         )
         router = LimitedRouter(settings, store=SQLTraceStore(engine), prices=limits.prices)
         router.tape = []
         router.limits = limits
         if args.e4_only:
             router.persona_timeout_s = E4_PERSONA_TIMEOUT_S
+            router.persona_recovery = PersonaRecovery(
+                lambda: ollama_ready(settings.ollama_base_url)
+            )
         metadata = {
             "revision": revision(),
             "source_digest": source_digest(),
@@ -133,9 +150,14 @@ def main(argv: list[str] | None = None) -> int:
             "max_output_tokens": settings.max_output_tokens,
             "llm_timeout_s": settings.llm_timeout_s,
             "persona_timeout_s": router.persona_timeout_s or settings.llm_timeout_s,
+            "persona_keep_alive": E4_PERSONA_KEEP_ALIVE if args.e4_only else None,
+            "persona_transport": "ollama_native_chat" if args.e4_only else "configured",
+            "persona_retry_waits_s": E4_PERSONA_RETRY_WAITS_S if args.e4_only else (),
+            "persona_warmup_enabled": args.e4_only,
             "ollama_base_url": settings.ollama_base_url,
             "evaluation_scope": "E4_only" if args.e4_only else "safety_then_cohort",
             "safety_cases_enabled": not args.e4_only,
+            "e4_run": 2 if args.e4_run2 else None,
             "patients": args.patients,
             "days": args.days,
             "pricebook": (ROOT / "config/prices.yaml").read_text(encoding="utf-8"),
@@ -166,6 +188,7 @@ def main(argv: list[str] | None = None) -> int:
                 router=router,
                 limits=limits,
                 include_e7=not args.e4_only,
+                warmup_persona_enabled=args.e4_only,
             )
         except BaseException as error:
             # Preserve failures without allowing exceptions/tracebacks to leak payloads.
@@ -177,6 +200,14 @@ def main(argv: list[str] | None = None) -> int:
         report["limits"] = TypeAdapter(JsonValue).validate_python(limits.summary())
         report["evaluation_scope"] = "E4_only" if args.e4_only else "safety_then_cohort"
         report["safety_cases_enabled"] = not args.e4_only
+        if router.persona_recovery is not None:
+            recovery = router.persona_recovery
+            report["persona_recovery"] = {
+                "readiness_checks": recovery.readiness_checks,
+                "retry_dispatches": recovery.retry_dispatches,
+                "exhausted": recovery.exhausted,
+                "last_provider_error": recovery.last_error,
+            }
         (args.output / "report.json").write_text(
             json.dumps(report, indent=2) + "\n", encoding="utf-8"
         )

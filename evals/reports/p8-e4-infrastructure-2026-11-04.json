@@ -1,0 +1,113 @@
+{
+  "runs": [
+    {
+      "run": 1,
+      "classification": "aborted_infrastructure_failure",
+      "cause": "human_reported_laptop_shutdown_under_sustained_gpu_load",
+      "evidence_note": "Human reports laptop shutdown. Original paid-call error code was not retained; preserve the observed spend-admission stop rather than claim a proven causal link.",
+      "original_runner_stop": "budget_exhausted",
+      "original_ledger_stop": "spend_admission_cap",
+      "actual_dispatch_attempts": 570,
+      "attempt_status_counts": {
+        "returned": 569,
+        "provider_error": 1
+      },
+      "route_counts": {
+        "ollama:gemma3:12b": 290,
+        "gemini:gemini-3.1-flash-lite": 279,
+        "gemini:gemini-3.8-flash": 1
+      },
+      "known_actual_api_cost_usd": "0.12070975",
+      "exact_actual_api_cost_usd": null,
+      "unknown_cost_attempts": [
+        569
+      ],
+      "unsettled_reservation_usd": "0.789432",
+      "conservative_cost_upper_bound_usd": "0.91014175",
+      "completed_patients_including_dropouts": 3,
+      "requested_patients": 30,
+      "turns": 126,
+      "partial_E4": {
+        "tp": 445,
+        "fp": 87,
+        "fn": 68,
+        "f1": 0.8516746411483254
+      },
+      "full_cohort_pass": false,
+      "new_generation_calls_for_repair_or_report": 0,
+      "resumed_or_merged": false,
+      "original_evidence_sha256": {
+        "assessment.json": "c2efb71be5bea603d792e2ea76461e4b24587a3179dd3e71f506981595853cdb",
+        "configuration.json": "b9ceebb644fec149dc2e16f5caaae6ee50dc2b1f871b0e15e872f8864de5f519",
+        "ledger.json": "31c627642e5dca683d8e960d63acaf6d71f6bfc6a3ec3ded3fb986bb69323ab2",
+        "report.json": "9cae4bf712098ff381998d02f29999d984cb1d484719f5da571fa2056b6b5135",
+        "STARTED.json": "19c1c6808c15baa691ed5f0c9786a44304811a7f2c04c8ceb6deda86e2fea4a5",
+        "SUMMARY.md": "0a9d2a72db07e738e519da928173b5c1e0c89eb66392171c132ac030bf21f6a0",
+        "verification.json": "647551826f79d14e3d70a5db46fda48c2b7bf3cff73b622ab3e957ab6ec476ea"
+      }
+    },
+    {
+      "run": 2,
+      "classification": "aborted_infrastructure_failure",
+      "cause": "ollama_model_runner_fault_and_server_restart",
+      "evidence_note": "Human reports model runner fatal error: fault around 19:23 America/New_York, then restart about 90 seconds later. Local server.log confirms fatal error: fault and Ollama 0.18.2 listening again at 2026-11-04T19:23:59.768-05:00. Ledger records the in-flight local persona failure; no recovery retry existed.",
+      "original_runner_stop": "provider_failure",
+      "original_ledger_stop": null,
+      "actual_dispatch_attempts": 58,
+      "attempt_status_counts": {
+        "returned": 57,
+        "provider_error": 1
+      },
+      "route_counts": {
+        "ollama:gemma3:12b": 31,
+        "gemini:gemini-3.1-flash-lite": 27
+      },
+      "known_actual_api_cost_usd": "0.01148250",
+      "exact_actual_api_cost_usd": "0.01148250",
+      "unknown_cost_attempts": [],
+      "unsettled_reservation_usd": "0.000000",
+      "conservative_cost_upper_bound_usd": "0.01148250",
+      "completed_patients_including_dropouts": 1,
+      "requested_patients": 30,
+      "turns": 12,
+      "partial_E4": {
+        "tp": 40,
+        "fp": 9,
+        "fn": 7,
+        "f1": 0.8333333333333334
+      },
+      "full_cohort_pass": false,
+      "new_generation_calls_for_repair_or_report": 0,
+      "resumed_or_merged": false,
+      "original_evidence_sha256": {
+        "configuration.json": "7c3423b52519a3a8256b77db49d2ba83bc9df7801145d7c4381cbcdba3ff7894",
+        "ledger.json": "972cab4553807420326a0be7b1d1088d405ce6c184ddbfd668821934b204d997",
+        "report.json": "e633f933f678faff26e37f81f6a0ff445ca2e55be1361f90a2beaca486ece57c",
+        "STARTED.json": "a1d7d69dfe3c20f9deb58c79ac27b7e342c74a3e4d46db16a71ace831f24caa6"
+      }
+    }
+  ],
+  "frozen_input_hashes_verified": {
+    "backend/app/agent/prompts/composer_answer.md": "2356dfffb362b0178cf6175c5ad1b56cfed6c371ddd7a4b1df2b76da4e6b45ee",
+    "backend/app/agent/prompts/composer_checkin.md": "1a3ddb148a70bfd1a6ad8f7b55d4059be536e390848d7af6e230dc7a4e6f09ea",
+    "backend/app/agent/prompts/composer_experiment.md": "84f9cc19a2d17c60c7d0d5279db9cd5a0c4fbbb5035f9dc0d402a3d5858f6836",
+    "backend/app/agent/prompts/composer_insight.md": "a8f3d4e8da3a6d00dd4f61842c74a67252ba53afad9c5b919b01f0605e213472",
+    "backend/app/agent/prompts/judge_safety.md": "0d8d7f806928be33065c276c8ab5a9680c358a30f8479e3c0cc0a2e1c9d2bb74",
+    "backend/app/agent/prompts/persona_render.md": "c2491ac9d4801f12bfa821a79dfa2e1d364ddb97a546451eeb9c944d8f994a8d",
+    "backend/app/agent/prompts/turn_analyzer.md": "c2a1bb95120406899b495925a229e76ae50a57df1d422140ec0175b3ff86017e",
+    "backend/app/agent/safety/__init__.py": "0b59a3ccd142bf0387b66580b8979f89d25bd4898b07516746049623d991c774",
+    "backend/app/agent/safety/config.py": "20c2ac7fc68c872c139687868665c086a16b77b52d82df4916696ddb9ea20c49",
+    "backend/app/agent/safety/evaluation.py": "2e788500ec255feb7ff20409fbec212d5c38634a5d842aa0244432427c0c3a30",
+    "backend/app/agent/safety/inbound.py": "607ee55f37cf2afff8fe0bac6f1aa9808f3bd1233d4b2c0965aa8c6c624cc119",
+    "backend/app/agent/safety/output_guard.py": "a3f103ca84c26ecc1fef825b32e6ebb7dca5c59474fa12580f61daad5046dee6",
+    "backend/app/agent/safety/templates.py": "616b1d03eafabc7874455c9234e3d89f30026f080cbae4f1806965182f800162",
+    "evals/safety/adversarial_dx.jsonl": "fe9e3fbb0a361dd6b475b7877e86968092be9c89bc6049e7e4700a79b7167442",
+    "evals/safety/benign.jsonl": "b6926e7d35eaeb05d1fdd087b7d311edffb672012a47d0e6dce71b68e41a7597",
+    "evals/safety/guard_bad_replies.jsonl": "32a8fc52947609d39b67b360959a2176ccaa4d8ce491d04b303e59229de1c3dc",
+    "evals/safety/guard_good_replies.jsonl": "65a7267489f8fe61382bf08a9911a9310fea2d9aa988327f85e2207ff568406a",
+    "evals/safety/red_flags.jsonl": "57d072b0ef9357556a4946fbfb034682b28c42b9ed6bd5814ba130e2627433dc",
+    "evals/baselines/stats_baseline.json": "8e9d6eee78bc0366a56550f3ac018ac5222cf382dea4457dd07e107b8c094257"
+  },
+  "run_3_authorized": false,
+  "resumption_implemented": false
+}

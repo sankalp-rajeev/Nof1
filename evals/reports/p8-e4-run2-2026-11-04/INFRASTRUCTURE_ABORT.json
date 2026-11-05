@@ -1,0 +1,40 @@
+{
+  "run": 2,
+  "classification": "aborted_infrastructure_failure",
+  "cause": "ollama_model_runner_fault_and_server_restart",
+  "evidence_note": "Human reports model runner fatal error: fault around 19:23 America/New_York, then restart about 90 seconds later. Local server.log confirms fatal error: fault and Ollama 0.18.2 listening again at 2026-11-04T19:23:59.768-05:00. Ledger records the in-flight local persona failure; no recovery retry existed.",
+  "original_runner_stop": "provider_failure",
+  "original_ledger_stop": null,
+  "actual_dispatch_attempts": 58,
+  "attempt_status_counts": {
+    "returned": 57,
+    "provider_error": 1
+  },
+  "route_counts": {
+    "ollama:gemma3:12b": 31,
+    "gemini:gemini-3.1-flash-lite": 27
+  },
+  "known_actual_api_cost_usd": "0.01148250",
+  "exact_actual_api_cost_usd": "0.01148250",
+  "unknown_cost_attempts": [],
+  "unsettled_reservation_usd": "0.000000",
+  "conservative_cost_upper_bound_usd": "0.01148250",
+  "completed_patients_including_dropouts": 1,
+  "requested_patients": 30,
+  "turns": 12,
+  "partial_E4": {
+    "tp": 40,
+    "fp": 9,
+    "fn": 7,
+    "f1": 0.8333333333333334
+  },
+  "full_cohort_pass": false,
+  "new_generation_calls_for_repair_or_report": 0,
+  "resumed_or_merged": false,
+  "original_evidence_sha256": {
+    "configuration.json": "7c3423b52519a3a8256b77db49d2ba83bc9df7801145d7c4381cbcdba3ff7894",
+    "ledger.json": "972cab4553807420326a0be7b1d1088d405ce6c184ddbfd668821934b204d997",
+    "report.json": "e633f933f678faff26e37f81f6a0ff445ca2e55be1361f90a2beaca486ece57c",
+    "STARTED.json": "a1d7d69dfe3c20f9deb58c79ac27b7e342c74a3e4d46db16a71ace831f24caa6"
+  }
+}

@@ -2,12 +2,13 @@
 
 CURRENT: P8
 
-P7 accepted. P8 offline gate green (579 backend / 23 frontend tests).
-The single authorized live run is recorded: 25 safety cases tested, 2 safety
-failures; cohort stopped on its first persona provider failure (0/30 patients
-completed). Actual calls: 46; exact calculated API cost: $0.01458975.
-P8 awaits human review. The one-run authorization is consumed. No rerun or tuning
-was performed. CURRENT remains P8; P9 is not authorized.
+P7 accepted. P8 awaits human review; P9 is not authorized.
+The original safety-first evaluation is preserved separately. E4-only runs 1 and 2
+are classified as aborted infrastructure failures, with partial results retained.
+Run 1: 570 attempts, $0.12070975 known actual API cost; exact total unknown, with
+$0.91014175 conservative upper bound. Run 2: 58 attempts, $0.01148250 exact API cost.
+All prior run authorizations are consumed. Recovery repair uses no new generation;
+run 3 requires separate human authorization. CURRENT remains P8.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -27,6 +28,90 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P8 infrastructure recovery repair (2026-11-04)
+
+Deliverables:
+- Add at most four persona retries with bounded waits and read-only readiness checks.
+- Set eval-persona keep-alive to 24 hours and warm up once before the cohort.
+- Retain clean exhaustion reasons and test recovery without generation or network.
+- Classify both E4 runs as infrastructure aborts and reconcile their actual costs.
+- Run the offline P8 gate, commit/push, and stop; run 3 requires separate approval.
+
+Scope decision: use the human's explicit fallback for item 3. Crash-safe patient
+resumption requires coordinated patient/metric checkpoints and cumulative budget
+restoration, beyond this connectivity repair. No resume capability is added;
+completed-patient calls cannot currently be recovered into a restarted run.
+
+Implemented: four readiness-gated local-persona recovery slots, each waiting 45
+seconds (180 seconds total deliberate backoff). Read-only inventory probes time
+out after three seconds; generation keeps its separate 120-second timeout. Every
+dispatch is metered and traced; generic HTTP retries are suppressed only for the
+recovery-enabled local persona to avoid nesting. Exhaustion records
+`persona_retries_exhausted`, the last provider code and recovery counters.
+
+Installed Ollama 0.18.2 ignores keep_alive on its OpenAI compatibility endpoint.
+The eval-only native /api/chat adapter sets keep_alive=24h and reproduces the old
+message/JSON/temperature/output-limit mapping, including top_p=1. Paid routes and
+the production adapter are unchanged. One routed, metered, schema-validated warm-up
+uses the frozen persona prompt and no observations before the cohort starts.
+Warm-up is excluded from E4/E8 cohort metrics; its usage still counts toward caps.
+
+Both E4 runs are reported as infrastructure aborts. Original reports/ledgers are
+unchanged; original stop labels remain as evidence. Run 1 was interrupted by the
+human-reported laptop shutdown; its paid failure returned no usage. Its unsettled
+reservation is $0.789432, not an actual charge. Run 2 ended on the failed local
+persona call during the Ollama model-runner fault; local logs confirm the fault
+and a server restart. Neither partial F1 is claimed as a full-cohort result.
+
+Reports: evals/reports/p8-e4-infrastructure-2026-11-04.md and .json, plus each run's
+INFRASTRUCTURE_ABORT.json and run 2's SUMMARY.md. Actual costs reconcile to the
+saved per-attempt usage and approved prices; all 19 frozen input hashes match.
+New generation calls: 0. No live warm-up or run 3 was executed.
+
+Recovery gate [x]: make gate PHASE=8 exited 0; 596 backend tests and 23 frontend
+tests passed, with Ruff lint/format, strict mypy, ESLint and TypeScript.
+Final warm-up metric/isolation checks: 10 recovery tests passed after ensuring
+failed warm-up latency is also excluded from cohort E8. All tests are offline;
+new tests carry p8. No existing test or threshold was changed.
+
+Gate command: `.tools/make/make.exe gate PHASE=8 PYTHON=backend/.venv/Scripts/python.exe`.
+Only test APP_ENV/DEBUG and fresh pytest cache/temp paths were overridden.
+
+Gate output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 86%]
+tests\test_sim_world.py ......                                           [ 87%]
+tests\test_stats_experiment.py ......................                    [ 90%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 95%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 596 passed, 1 warning in 162.42s (0:02:42) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  20:22:04
+   Duration  38.44s (environment 77%, setup 21%, tests 1%)
+
+P8 gate PASS
+```
 
 ### P8 separately authorized E4-only follow-up (2026-11-04)
 
