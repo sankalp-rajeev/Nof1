@@ -2,7 +2,8 @@
 
 Cloud provisioning, image builds, deployment and teardown commands are human-operated.
 The agent ran the requested no-LLM hosted latency measurement after the human
-deployed the services. No live evaluation or held-out evaluation has run.
+deployed the services. Partial local E4 evaluations are now recorded below;
+no final held-out evaluation has run.
 
 ## Deployed setup
 
@@ -398,6 +399,21 @@ and [runtime account deletion](https://docs.cloud.google.com/sdk/gcloud/referenc
 
 ## Remaining phase work
 
-P8 is **offline gate green, live eval pending, not yet approved**. The live cohort L
-and final held-out runs remain held. Deployment and demo smoke do not approve P8
-or start P9. Model prices remain human-maintained and unverified.
+P8 is **not yet approved**. E4-only runs 1 through 4 stopped for infrastructure,
+runner-validation or budget reasons. The [run-4 report](evals/reports/p8-e4-run4-2026-11-04/SUMMARY.md)
+is PARTIAL: the cohort is incomplete, so pre-registered cohort gates were not
+evaluated. Deployment and demo smoke do not approve P8 or start P9. Final
+held-out evaluation remains unexecuted; no new run is authorized here.
+
+Capacity planning for a full 30-patient cohort needs roughly **6,900 generation
+attempts**, above the existing **5,000-call ceiling** by about **1,900**. This is
+the human-specified approximate planning allowance, not a completed-cohort
+measurement; actual demand varies with dropout, missingness, follow-ups and
+retries. Run 4 was stopped first by the separate CLI total-token admission guard:
+its configured/default `MAX_TOTAL_TOKENS` is 2,000,000 and includes conservative
+failed-call reservations and the next estimated request. Returned usage alone
+was 1,994,009 tokens. Its $2.00 spend cap and 5,000-call cap were not reached.
+This documentation changes no caps or configurations. The [four-run cost record](evals/reports/p8-e4-runs-1-4-2026-11-05.md)
+distinguishes known actual API costs from unsettled reservations and unknown
+failed-call usage. Model prices remain human-maintained; reporting uses the
+frozen approved pricebook.

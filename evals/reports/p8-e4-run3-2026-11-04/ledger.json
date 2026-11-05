@@ -1,0 +1,23 @@
+{
+  "max_calls": 5000,
+  "spend_cap_usd": "2.0",
+  "actual_calls": 1,
+  "known_cost_usd": "0",
+  "actual_cost_usd": "0",
+  "unsettled_upper_bound_usd": "0",
+  "accounted_upper_bound_usd": "0",
+  "stop_reason": null,
+  "attempts": [
+    {
+      "attempt": 1,
+      "case_id": "persona_warmup",
+      "purpose": "persona",
+      "route": "ollama:gemma3:12b",
+      "status": "returned",
+      "reserved_usd": "0",
+      "cost_usd": "0",
+      "input_tokens": 275,
+      "output_tokens": 2
+    }
+  ]
+}

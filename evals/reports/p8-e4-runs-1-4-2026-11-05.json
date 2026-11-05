@@ -1,0 +1,71 @@
+{
+  "report_date": "2026-11-05",
+  "runs": [
+    {
+      "run": 1,
+      "folder": "p8-e4-2026-11-04",
+      "status": "PARTIAL_NOT_A_COMPLETED_EVALUATION",
+      "stop_category": "infrastructure_interruption_then_budget_admission",
+      "original_stop": "budget_exhausted",
+      "original_run_limit_stop": "spend_admission_cap",
+      "dispatch_attempts": 570,
+      "known_actual_api_cost_usd": "0.12070975",
+      "exact_actual_api_cost_usd": null,
+      "unsettled_upper_bound_usd": "0.789432",
+      "total_cost_upper_bound_usd": "0.91014175",
+      "unknown_cost_attempts": [
+        569
+      ]
+    },
+    {
+      "run": 2,
+      "folder": "p8-e4-run2-2026-11-04",
+      "status": "PARTIAL_NOT_A_COMPLETED_EVALUATION",
+      "stop_category": "infrastructure_ollama_runner_crash",
+      "original_stop": "provider_failure",
+      "original_run_limit_stop": null,
+      "dispatch_attempts": 58,
+      "known_actual_api_cost_usd": "0.01148250",
+      "exact_actual_api_cost_usd": "0.01148250",
+      "unsettled_upper_bound_usd": "0",
+      "total_cost_upper_bound_usd": "0.01148250",
+      "unknown_cost_attempts": []
+    },
+    {
+      "run": 3,
+      "folder": "p8-e4-run3-2026-11-04",
+      "status": "PARTIAL_NOT_A_COMPLETED_EVALUATION",
+      "stop_category": "infrastructure_runner_warmup_schema",
+      "original_stop": "provider_failure",
+      "original_run_limit_stop": null,
+      "dispatch_attempts": 1,
+      "known_actual_api_cost_usd": "0",
+      "exact_actual_api_cost_usd": "0",
+      "unsettled_upper_bound_usd": "0",
+      "total_cost_upper_bound_usd": "0",
+      "unknown_cost_attempts": []
+    },
+    {
+      "run": 4,
+      "folder": "p8-e4-run4-2026-11-04",
+      "status": "PARTIAL_NOT_A_COMPLETED_EVALUATION",
+      "stop_category": "budget_cli_total_tokens",
+      "original_stop": "budget_exhausted",
+      "original_run_limit_stop": null,
+      "dispatch_attempts": 2067,
+      "known_actual_api_cost_usd": "0.47159750",
+      "exact_actual_api_cost_usd": null,
+      "unsettled_upper_bound_usd": "0.263344",
+      "total_cost_upper_bound_usd": "0.73494150",
+      "unknown_cost_attempts": [
+        638
+      ]
+    }
+  ],
+  "cohort_gates_evaluated": false,
+  "new_generation_calls": 0,
+  "new_runs": 0,
+  "metrics_merged": false,
+  "run3_note": "Warm-up schema/runner setup failure; no hardware timeout was established.",
+  "run4_note": "CLI total-token admission; USD and dispatch ceilings not reached."
+}

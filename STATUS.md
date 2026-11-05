@@ -7,10 +7,14 @@ The original safety-first evaluation is preserved separately. E4-only runs 1 and
 are classified as aborted infrastructure failures, with partial results retained.
 Run 1: 570 attempts, $0.12070975 known actual API cost; exact total unknown, with
 $0.91014175 conservative upper bound. Run 2: 58 attempts, $0.01148250 exact API cost.
-Runs 1, 2 and 3 remain consumed. Run 3 stopped on a warm-up schema rejection
-(1 local call, $0). The human approved the four-call connectivity repair and
-run-4 wiring, gated commit/push, then a detached launch if readiness permits.
-Run 4 must refuse low VRAM before claiming its marker. CURRENT remains P8.
+Runs 1 through 4 remain consumed and incomplete. Run 3 stopped on a warm-up
+schema rejection (1 local call, $0). Run 4 is PARTIAL: 2,067 dispatches, nine
+30-calendar-day completions, four dropouts, seed 13 cut off on day 15, sixteen
+not started. CLI total-token admission stopped it before the $2/5,000 limits.
+Run 4 known actual API cost: $0.47159750; exact total unknown; unsettled hold
+$0.263344; total conservative upper bound $0.73494150. Pre-registered cohort
+gates were not evaluated because the cohort is incomplete. No new run or
+generation is authorized. CURRENT remains P8; P9 remains unauthorized.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -30,6 +34,98 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P8 partial E4 report and budget forensics (2026-11-05)
+
+Deliverables:
+- Identify the stopped guard from retained evidence and source without generation.
+- Reconcile exact patient statuses and preserve all raw partial metrics/failures.
+- Record each of runs 1–4 and distinguish actual costs from uncertain holds.
+- Add the roughly 6,900-attempt capacity note without changing caps or inputs.
+- Run offline checks, verify original/frozen hashes, commit/push, then stop.
+
+Run 4 is PARTIAL. No pre-registered cohort gate was evaluated or compared with
+a threshold. Full 30-calendar-day completion seeds: 1, 3, 4, 5, 6, 7, 9, 11, 12.
+Dropout seeds/days (one-based): 0/6, 2/28, 8/11, 10/4. Seed 13 was cut off at
+13:14:1 on day 15; seeds 14–29 did not start. The raw completed_patients=13
+includes four dropouts, not thirteen full completions. All partial observations
+and the final limited turn remain in the raw metrics; no cherry-picking or tuning.
+
+Guard reconstruction: CostTracker.total_tokens in CLI mode, scoped to this
+router's _cli_ids across run users/purposes, not unrelated DB history. The
+configured/default cap is 2,000,000 tokens. Returned input/output including
+warm-up is 1,830,334 + 163,675 = 1,994,009, leaving 5,991 before outstanding
+reservations and the next request. Three failed calls retain input estimates
+and 800 output tokens apiece; the next composer also reserves 800 output plus
+estimated input. That conservative admission total crossed the token ceiling.
+There are 2,068 trace rows versus 2,067 actual dispatches: the refused composer
+at 13:14:1 accounts for the difference. The JSON ledger's run stop_reason=null.
+
+Exact failed-input reservations, next input estimate and the exact projected
+crossing value are not retained. Normal cleanup cascade-deleted the SQL rows;
+read-only DB inspection found llm_calls empty. The original configuration also
+omitted MAX_TOTAL_TOKENS; the default/current resolved value is 2,000,000 and the
+launch script does not override it. This is source/ledger reconstruction, not a
+quotation of a preserved per-call total_tokens error. These limits on evidence
+are explicit in the report; no missing number is invented.
+
+Run-4 USD/call limits did not fire: $0.47159750 known actual + $0.263344 hold =
+$0.73494150 upper bound, $1.26505850 below $2.00; 2,933 dispatches remained.
+Even a maximum-context next Flash-Lite admission would total $0.99828550.
+Failed paid usage is unknown, so exact total actual cost remains null.
+
+Runs 1–4 are recorded separately as infrastructure/runner/budget-stopped:
+1=$0.12070975 known, exact unknown, upper $0.91014175;
+2=$0.01148250 exact; 3=$0 exact, warm-up schema/setup (not confirmed hardware);
+4=$0.47159750 known, exact unknown, upper $0.73494150. No metrics were merged.
+
+Reports: evals/reports/p8-e4-run4-2026-11-04/SUMMARY.md and PARTIAL.json;
+verification.json records 16 original evidence hashes and the 19 frozen input
+hashes. The raw report/ledger/configuration/STARTED files for all runs are
+unchanged. The four-run rollup is p8-e4-runs-1-4-2026-11-05.md/.json.
+README.md and DEPLOY.md label roughly 6,900 attempts as the human-specified
+planning allowance, above the unchanged 5,000 ceiling, not a measured full run.
+No application, stats, prompt, rule, dataset, baseline or budget configuration
+changed. No new run, generation, replay or held-out evaluation was performed.
+
+Offline code checks [x]: make gate PHASE=8 exited 0; 630 backend and 23 frontend
+tests passed, with lint/format and type checks. These are code/regression checks,
+not evaluation of the incomplete live cohort against pre-registered criteria.
+
+Last 30 lines of offline check output:
+
+```text
+tests\test_sim_scoring.py .........                                      [ 86%]
+tests\test_sim_world.py ......                                           [ 87%]
+tests\test_stats_experiment.py ......................                    [ 91%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 95%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 630 passed, 1 warning in 157.73s (0:02:37) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  00:49:03
+   Duration  24.42s (environment 78%, setup 20%, tests 1%)
+
+P8 gate PASS
+```
 
 ### P8 approved run-4 wiring and launch preparation (2026-11-04)
 

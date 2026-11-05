@@ -1,0 +1,83 @@
+{
+  "mode": "live_synthetic",
+  "ordering": "cohort_only",
+  "failure_case_ids": {
+    "provider_error": [
+      "persona_warmup"
+    ],
+    "invalid": [
+      "persona_warmup"
+    ],
+    "safety": [],
+    "extraction": []
+  },
+  "failure_totals": {
+    "provider_error": 1,
+    "invalid": 1,
+    "safety": 0,
+    "extraction": 0
+  },
+  "total_traced_attempts": 1,
+  "completed_patients": 0,
+  "requested_patients": 30,
+  "days": 30,
+  "turns": 0,
+  "stopped": "provider_failure",
+  "provider_failure_reason": "persona_warmup_invalid",
+  "persona_warmup_completed": false,
+  "dropouts": 0,
+  "followup_bound_hits": 0,
+  "E4": null,
+  "E7": {
+    "tested": 0,
+    "failed": [],
+    "pending": true
+  },
+  "E8": {
+    "guard_regen_rate": null,
+    "guard_fallback_rate": null,
+    "all_fallback_rate": null,
+    "latency_ms": {},
+    "cost_per_100_turns_usd": null,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_price_calls": 0,
+    "provider_error_calls": 0,
+    "invalid_calls": 0
+  },
+  "renders": 0,
+  "render_fallbacks": 0,
+  "render_fallback_rate": null,
+  "synthetic_users_deleted": true,
+  "limits": {
+    "max_calls": 5000,
+    "spend_cap_usd": "2.0",
+    "actual_calls": 1,
+    "known_cost_usd": "0",
+    "actual_cost_usd": "0",
+    "unsettled_upper_bound_usd": "0",
+    "accounted_upper_bound_usd": "0",
+    "stop_reason": null,
+    "attempts": [
+      {
+        "attempt": 1,
+        "case_id": "persona_warmup",
+        "purpose": "persona",
+        "route": "ollama:gemma3:12b",
+        "status": "returned",
+        "reserved_usd": "0",
+        "cost_usd": "0",
+        "input_tokens": 275,
+        "output_tokens": 2
+      }
+    ]
+  },
+  "evaluation_scope": "E4_only",
+  "safety_cases_enabled": false,
+  "persona_recovery": {
+    "readiness_checks": 0,
+    "retry_dispatches": 0,
+    "exhausted": false,
+    "last_provider_error": null
+  }
+}

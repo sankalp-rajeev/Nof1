@@ -1,0 +1,414 @@
+{
+  "report_date": "2026-11-05",
+  "status": "PARTIAL",
+  "source_revision": "6df29e9b940fa1ebfdff5c96316e3c5b7a418f29",
+  "pre_registered_cohort_gates": {
+    "evaluated": false,
+    "outcome": null,
+    "reason": "Cohort incomplete; no threshold comparison or acceptance claim."
+  },
+  "budget_analysis": {
+    "identified_guard": "CostTracker.total_tokens",
+    "scope": "CLI process _cli_ids, across this run's users and purposes",
+    "determination": "source/control-flow and retained usage; original per-call error row was cascade-deleted",
+    "mode": "cli",
+    "max_total_tokens": 2000000,
+    "cap_provenance": "Config default/current resolved value 2000000; launch script does not override it. Not frozen in original configuration.json.",
+    "returned_input_tokens_including_warmup": 1830334,
+    "returned_output_tokens_including_warmup": 163675,
+    "returned_total_tokens": 1994009,
+    "headroom_before_unsettled_token_reservations_and_next_request": 5991,
+    "failed_dispatches_retaining_token_reservations": [
+      638,
+      1273,
+      1663
+    ],
+    "failed_input_token_reservations": null,
+    "failed_output_token_reservations_total": 2400,
+    "next_request_purpose": "composer_checkin",
+    "next_request_output_reservation": 800,
+    "next_request_input_estimate": null,
+    "exact_projected_token_total": null,
+    "missing_diagnostics": "The JSON dispatch ledger omits token estimates/reservations and trace error codes. SQL rows were deleted by normal cleanup, and the current llm_calls table is empty. Do not invent the exact crossing value.",
+    "run_usd_cap": "2.00",
+    "known_cost_usd": "0.47159750",
+    "unsettled_usd_hold": "0.263344",
+    "accounted_usd_upper_bound": "0.73494150",
+    "usd_headroom": "1.26505850",
+    "next_lite_max_request_reservation_usd": "0.263344",
+    "next_lite_worst_case_accounted_usd": "0.99828550",
+    "run_max_calls": 5000,
+    "dispatch_attempts": 2067,
+    "remaining_dispatch_allowance": 2933,
+    "run_limit_stop_reason": null,
+    "all_db_history_summed_for_budget": false,
+    "all_db_query_explanation": "tx.records(since=None) is used for trace attempt numbering, not CLI token/spend scope."
+  },
+  "patient_groups": {
+    "completed_30_calendar_days": [
+      1,
+      3,
+      4,
+      5,
+      6,
+      7,
+      9,
+      11,
+      12
+    ],
+    "dropped_out": [
+      0,
+      2,
+      8,
+      10
+    ],
+    "cut_off_mid_run": [
+      13
+    ],
+    "not_started": [
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29
+    ]
+  },
+  "patients": [
+    {
+      "seed": 0,
+      "dispatch_attempts": 25,
+      "last_dispatched_case": "0:1:1",
+      "status": "dropped_out",
+      "dropout_day_1based": 6,
+      "calendar_days_processed": 5
+    },
+    {
+      "seed": 1,
+      "dispatch_attempts": 172,
+      "last_dispatched_case": "1:29:free",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 2,
+      "dispatch_attempts": 222,
+      "last_dispatched_case": "2:26:1",
+      "status": "dropped_out",
+      "dropout_day_1based": 28,
+      "calendar_days_processed": 27
+    },
+    {
+      "seed": 3,
+      "dispatch_attempts": 187,
+      "last_dispatched_case": "3:29:free",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 4,
+      "dispatch_attempts": 186,
+      "last_dispatched_case": "4:29:0",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 5,
+      "dispatch_attempts": 164,
+      "last_dispatched_case": "5:29:free",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 6,
+      "dispatch_attempts": 173,
+      "last_dispatched_case": "6:29:0",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 7,
+      "dispatch_attempts": 236,
+      "last_dispatched_case": "7:29:free",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 8,
+      "dispatch_attempts": 125,
+      "last_dispatched_case": "8:9:1",
+      "status": "dropped_out",
+      "dropout_day_1based": 11,
+      "calendar_days_processed": 10
+    },
+    {
+      "seed": 9,
+      "dispatch_attempts": 142,
+      "last_dispatched_case": "9:29:free",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 10,
+      "dispatch_attempts": 13,
+      "last_dispatched_case": "10:1:free",
+      "status": "dropped_out",
+      "dropout_day_1based": 4,
+      "calendar_days_processed": 3
+    },
+    {
+      "seed": 11,
+      "dispatch_attempts": 147,
+      "last_dispatched_case": "11:29:free",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 12,
+      "dispatch_attempts": 171,
+      "last_dispatched_case": "12:29:free",
+      "status": "completed_30_calendar_days",
+      "calendar_days_processed": 30
+    },
+    {
+      "seed": 13,
+      "dispatch_attempts": 103,
+      "last_dispatched_case": "13:14:1",
+      "status": "cut_off_mid_run",
+      "cutoff_day_1based": 15,
+      "complete_calendar_days_before_cutoff": 14,
+      "cutoff_case": "13:14:1"
+    },
+    {
+      "seed": 14,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 15,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 16,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 17,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 18,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 19,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 20,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 21,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 22,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 23,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 24,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 25,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 26,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 27,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 28,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    },
+    {
+      "seed": 29,
+      "dispatch_attempts": 0,
+      "last_dispatched_case": null,
+      "status": "not_started",
+      "calendar_days_processed": 0
+    }
+  ],
+  "patient_status_method": "Frozen deterministic participation decisions plus sequential loop, case IDs and counters; no cohort replay or generation.",
+  "raw_metrics": {
+    "mode": "live_synthetic",
+    "ordering": "cohort_only",
+    "failure_totals": {
+      "render_validation": 315,
+      "guard_regeneration": 98,
+      "fallback": 95,
+      "render_fallback": 249,
+      "followup_bound": 4,
+      "incomplete": 1,
+      "invalid": 332,
+      "error": 3,
+      "budget": 1,
+      "safety": 0,
+      "extraction": 173
+    },
+    "total_traced_attempts": 2068,
+    "completed_patients": 13,
+    "requested_patients": 30,
+    "days": 30,
+    "turns": 464,
+    "stopped": "budget_exhausted",
+    "provider_failure_reason": null,
+    "persona_warmup_completed": true,
+    "dropouts": 4,
+    "followup_bound_hits": 4,
+    "E4": {
+      "tp": 1851,
+      "fp": 289,
+      "fn": 240,
+      "f1": 0.8749704561569369
+    },
+    "E7": {
+      "tested": 0,
+      "failed": [],
+      "pending": true
+    },
+    "E8": {
+      "guard_regen_rate": 0.21120689655172414,
+      "guard_fallback_rate": 0.18318965517241378,
+      "all_fallback_rate": 0.20474137931034483,
+      "latency_ms": {
+        "composer_checkin": {
+          "mean": 829.9836660617257,
+          "p95": 1156.0000000026776,
+          "calls": 551
+        },
+        "persona": {
+          "mean": 5691.189704480525,
+          "p95": 19225.599999997925,
+          "calls": 1049
+        },
+        "analyzer": {
+          "mean": 1167.3784946236992,
+          "p95": 1485.000000000582,
+          "calls": 465
+        },
+        "composer_insight": {
+          "mean": 8241.99999999837,
+          "p95": 8881.899999994494,
+          "calls": 2
+        }
+      },
+      "cost_per_100_turns_usd": 0.10163739224137942,
+      "input_tokens": 1830059,
+      "output_tokens": 163673,
+      "unknown_price_calls": 0,
+      "provider_error_calls": 3,
+      "invalid_calls": 1015
+    },
+    "renders": 464,
+    "render_fallbacks": 249,
+    "render_fallback_rate": 0.5366379310344828,
+    "synthetic_users_deleted": true,
+    "evaluation_scope": "E4_only",
+    "safety_cases_enabled": false,
+    "persona_recovery": {
+      "readiness_checks": 2,
+      "retry_dispatches": 2,
+      "exhausted": false,
+      "last_provider_error": "connection"
+    }
+  },
+  "raw_failure_case_ids_location": "report.json#/failure_case_ids",
+  "planning_estimate": {
+    "attempts": 6900,
+    "source": "Human-specified approximate capacity planning allowance, not a measured complete-cohort result",
+    "existing_ceiling": 5000,
+    "shortfall": 1900
+  },
+  "original_evidence_sha256": {
+    "evals/reports/p8-e4-2026-11-04/STARTED.json": "19c1c6808c15baa691ed5f0c9786a44304811a7f2c04c8ceb6deda86e2fea4a5",
+    "evals/reports/p8-e4-2026-11-04/configuration.json": "b9ceebb644fec149dc2e16f5caaae6ee50dc2b1f871b0e15e872f8864de5f519",
+    "evals/reports/p8-e4-2026-11-04/ledger.json": "31c627642e5dca683d8e960d63acaf6d71f6bfc6a3ec3ded3fb986bb69323ab2",
+    "evals/reports/p8-e4-2026-11-04/report.json": "9cae4bf712098ff381998d02f29999d984cb1d484719f5da571fa2056b6b5135",
+    "evals/reports/p8-e4-run2-2026-11-04/STARTED.json": "a1d7d69dfe3c20f9deb58c79ac27b7e342c74a3e4d46db16a71ace831f24caa6",
+    "evals/reports/p8-e4-run2-2026-11-04/configuration.json": "7c3423b52519a3a8256b77db49d2ba83bc9df7801145d7c4381cbcdba3ff7894",
+    "evals/reports/p8-e4-run2-2026-11-04/ledger.json": "972cab4553807420326a0be7b1d1088d405ce6c184ddbfd668821934b204d997",
+    "evals/reports/p8-e4-run2-2026-11-04/report.json": "e633f933f678faff26e37f81f6a0ff445ca2e55be1361f90a2beaca486ece57c",
+    "evals/reports/p8-e4-run3-2026-11-04/STARTED.json": "11b170efa1a5eb993b377964d55684dc4eb6cb1a83bc5c382c781695cad36de0",
+    "evals/reports/p8-e4-run3-2026-11-04/configuration.json": "09d1d4bce8abc30eaa20805c0b57990131a5f993aff28e009c4e2958050def68",
+    "evals/reports/p8-e4-run3-2026-11-04/ledger.json": "c6d9f56312ca7c1009c8035ceb1216f41c54ad5c4dbd2da5c38fd5de3a8992cf",
+    "evals/reports/p8-e4-run3-2026-11-04/report.json": "02e9752f1bae3282fea58354f2a008a00424cbde3229a6822a76153496c920fd",
+    "evals/reports/p8-e4-run4-2026-11-04/STARTED.json": "afc4d677f1e9508b70a8be88b335e24405cbe84f976553eed79baeaff9d567dd",
+    "evals/reports/p8-e4-run4-2026-11-04/configuration.json": "e686ef431135bde128960a0a036e0c1695f976ce78981321296bd107f9105fae",
+    "evals/reports/p8-e4-run4-2026-11-04/ledger.json": "32a4e23568da4137644bacfc571b26428e9c4f171ae378f1bdd8dc0fd13fd099",
+    "evals/reports/p8-e4-run4-2026-11-04/report.json": "d8c43850a8fd5b9fb890122d94d89e7a19185e26a92a032c7112b245c776c568"
+  }
+}

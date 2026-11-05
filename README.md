@@ -176,3 +176,22 @@ named receipts, and counts must match those receipts. Bare ratings and latest-da
 lookups use deterministic replies; provider failures ask the user to retry later.
 The [diagnostic report](evals/reports/chat_diagnosis_2026-10-31.md) records the live
 synthetic smoke evidence. Automated gates remain offline with FakeLLM and deterministic simulation.
+
+## Partial E4 evaluation (P8)
+
+The [run-4 report](evals/reports/p8-e4-run4-2026-11-04/SUMMARY.md) is **PARTIAL**:
+nine patients reached all 30 calendar days, four dropped out, one was cut off on
+day 15, and sixteen never started. Raw metrics include all observed turns;
+pre-registered cohort gates were not evaluated because the cohort is incomplete.
+The [four-run record](evals/reports/p8-e4-runs-1-4-2026-11-05.md) preserves each
+infrastructure/runner/budget stop and its actual-cost uncertainty separately.
+
+A full 30-patient cohort needs roughly **6,900 generation attempts** as a planning
+allowance, above the frozen **5,000-call ceiling** by about **1,900**. This is an
+approximate human-specified capacity estimate, not a measured complete-cohort
+result; dropout, missingness, follow-ups and retries change actual demand.
+Run 4 hit the separate CLI `MAX_TOTAL_TOKENS=2,000,000` admission guard first,
+while still below its $2.00 and 5,000-call limits. Failed-call token reservations
+and the next request count toward token admission. No limits, thresholds or
+baseline were changed, and no new run was authorized by this report. P8 remains
+unapproved; final held-out evaluation has not run.
