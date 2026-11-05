@@ -34,6 +34,12 @@ ROUTE = "ollama:gemma3:12b"
 CTX = CallContext("persona", "synthetic", None, UUID(int=81))
 
 
+@pytest.fixture(autouse=True)
+def offline_gpu_placement(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Warm-up uses a fake placement check; no command or server runs in tests."""
+    monkeypatch.setattr("sim.ollama_recovery.require_full_gpu", lambda _: None)
+
+
 class RestartFake(FakeLLMClient):
     def __init__(self, errors: int) -> None:
         super().__init__([LLMResponse('{"text":"Ready."}', 10, 5)] * 10)
@@ -188,21 +194,22 @@ def test_warmup_precedes_cohort_is_traced_and_excluded_from_e4(engine: Engine) -
         assert session.scalar(select(func.count()).select_from(m.LLMCall)) == 0
 
 
-def test_invalid_warmup_stops_before_cohort_without_validation_regeneration(engine: Engine) -> None:
+def test_warmup_discards_unused_reply_without_schema_validation(engine: Engine) -> None:
     settings, router, _ = configured(engine)
     fake = FakeLLMClient([LLMResponse("invalid json", 10, 5)])
     router.clients = {"ollama": fake}
     report, bundle = run_chat(
         settings,
         engine,
-        seeds=[0],
+        seeds=[],
         days=1,
         router=router,
         include_e7=False,
         warmup_persona_enabled=True,
     )
-    assert report["stopped"] == "provider_failure"
-    assert report["provider_failure_reason"] == "persona_warmup_invalid"
+    assert report["stopped"] is None
+    assert report["persona_warmup_completed"] is True
+    assert not report["failure_case_ids"].get("invalid", [])
     assert report["completed_patients"] == 0 and not bundle.cases
     assert len(fake.calls) == 1
 

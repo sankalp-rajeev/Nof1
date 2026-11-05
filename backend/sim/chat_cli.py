@@ -9,6 +9,7 @@ from pathlib import Path
 
 from pydantic import JsonValue, TypeAdapter
 
+from app.agent.llm.base import ProviderError
 from app.agent.llm.cost import PriceBook
 from app.agent.tracing import SQLTraceStore
 from app.config import ROOT, Settings
@@ -25,6 +26,7 @@ from sim.config import (
     E4_RUN2_MAX_SPEND_USD,
     LIVE_MAX_CALLS,
 )
+from sim.gpu_preflight import require_free_vram
 from sim.live_limits import LimitedRouter, LiveLimits, claim_run
 from sim.ollama_recovery import PersonaRecovery, ollama_ready
 from sim.replay import ReplayBundle, replay_bundle, score_dict
@@ -83,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
     live.add_argument("--e4-only", action="store_true", help="Separate authorized cohort-only run")
     live.add_argument("--e4-run2", action="store_true", help="Fresh separately authorized E4 run 2")
     live.add_argument("--e4-run3", action="store_true", help="Fresh separately authorized E4 run 3")
+    live.add_argument("--e4-run4", action="store_true", help="Fresh separately authorized E4 run 4")
     live.add_argument("--patients", type=int, default=len(COHORT_L), choices=range(1, 31))
     live.add_argument("--days", type=int, default=CHAT_DAYS, choices=range(1, CHAT_DAYS + 1))
     live.add_argument("--output", type=Path, default=ROOT / "evals/reports/p8-live")
@@ -101,9 +104,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     budget = require_budget(args.budget)
-    if args.e4_run2 and args.e4_run3:
+    if sum((args.e4_run2, args.e4_run3, args.e4_run4)) > 1:
         raise ValueError("Choose exactly one E4 run authorization")
-    separate_e4_run = args.e4_run2 or args.e4_run3
+    separate_e4_run = args.e4_run2 or args.e4_run3 or args.e4_run4
     if separate_e4_run and (
         not args.e4_only or args.patients != len(COHORT_L) or args.days != CHAT_DAYS
     ):
@@ -122,12 +125,21 @@ def main(argv: list[str] | None = None) -> int:
         raise FileExistsError(
             "Choose a new output directory; prior eval evidence is not overwritten"
         )
+    free_vram_mib = None
+    if args.e4_run4:
+        try:
+            free_vram_mib = require_free_vram()
+        except ProviderError as error:
+            print(json.dumps({"stopped": "gpu_preflight_failed", "reason": error.code}), flush=True)
+            return 1  # No generation or authorization claim before the VRAM check passes.
     engine = create_db_engine(settings.database_url)
     try:
         # A fixed claim prevents accidentally consuming this authorization twice,
         # even with a different output argument or after an interrupted process.
         authorization = authorization_claim(e4_only=args.e4_only)
-        if args.e4_run3:
+        if args.e4_run4:
+            authorization = authorization.with_name(authorization.name + "-run-4")
+        elif args.e4_run3:
             authorization = authorization.with_name(authorization.name + "-run-3")
         elif args.e4_run2:
             authorization = authorization.with_name(authorization.name + "-run-2")
@@ -165,7 +177,9 @@ def main(argv: list[str] | None = None) -> int:
             "ollama_base_url": settings.ollama_base_url,
             "evaluation_scope": "E4_only" if args.e4_only else "safety_then_cohort",
             "safety_cases_enabled": not args.e4_only,
-            "e4_run": 3 if args.e4_run3 else 2 if args.e4_run2 else None,
+            "e4_run": 4 if args.e4_run4 else 3 if args.e4_run3 else 2 if args.e4_run2 else None,
+            "persona_gpu_preflight_enabled": args.e4_run4,
+            "free_vram_mib_before_warmup": free_vram_mib,
             "patients": args.patients,
             "days": args.days,
             "pricebook": (ROOT / "config/prices.yaml").read_text(encoding="utf-8"),

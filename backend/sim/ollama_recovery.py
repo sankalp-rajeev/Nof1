@@ -10,6 +10,7 @@ from app.agent.llm.base import CallContext, LLMClient, LLMMessage, LLMResponse, 
 from app.agent.llm.router import LLMRouter
 from app.agent.prompts.loader import load_prompt
 from sim.config import E4_PERSONA_KEEP_ALIVE, E4_PERSONA_RETRY_WAITS_S, E4_READINESS_TIMEOUT_S
+from sim.gpu_preflight import require_full_gpu
 from sim.personas import persona_card
 from sim.render import RenderedText
 
@@ -137,8 +138,10 @@ class PersonaRecovery:
 
 
 def warmup_persona(router: LLMRouter, ctx: CallContext) -> None:
-    """One routed, metered persona request, with the frozen prompt and no observations."""
-    response = router.get("persona").generate(
+    """Check response arrival and full GPU placement; discard unused warm-up content."""
+    if not router.settings.sim_persona.startswith("ollama:"):
+        raise ProviderError("persona_warmup_requires_local_ollama")
+    router.get("persona").generate(
         load_prompt("persona_render").messages(
             {"events": [], "persona": persona_card(0).model_dump(mode="json")}
         ),
@@ -147,8 +150,4 @@ def warmup_persona(router: LLMRouter, ctx: CallContext) -> None:
         temperature=0,
         ctx=ctx,
     )
-    try:
-        RenderedText.model_validate_json(response.text)
-    except ValidationError:
-        router.mark_invalid(response, reason="persona_warmup_schema")
-        raise ProviderError("persona_warmup_invalid") from None
+    require_full_gpu(router.settings.sim_persona.split(":", 1)[1])

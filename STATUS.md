@@ -7,9 +7,10 @@ The original safety-first evaluation is preserved separately. E4-only runs 1 and
 are classified as aborted infrastructure failures, with partial results retained.
 Run 1: 570 attempts, $0.12070975 known actual API cost; exact total unknown, with
 $0.91014175 conservative upper bound. Run 2: 58 attempts, $0.01148250 exact API cost.
-Runs 1 and 2 remain consumed. The human has approved one fresh E4-only run 3
-after the authorization-only patch passes the gate and is committed/pushed.
-No generation occurs before those checks. CURRENT remains P8.
+Runs 1, 2 and 3 remain consumed. Run 3 stopped on a warm-up schema rejection
+(1 local call, $0). The human approved the four-call connectivity repair and
+run-4 wiring, gated commit/push, then a detached launch if readiness permits.
+Run 4 must refuse low VRAM before claiming its marker. CURRENT remains P8.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -29,6 +30,132 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P8 approved run-4 wiring and launch preparation (2026-11-04)
+
+Deliverables:
+- Apply the approved connectivity fix and distinct immutable run-4 authorization.
+- Retain $2.00/5,000 limits, full 30-patient cohort and prior consumed markers.
+- Refuse low VRAM before claiming; require 100%-GPU placement after warm-up.
+- Pass the offline P8 gate, verify frozen hashes, commit/push and record revision.
+- Launch detached if preflight passes, otherwise report refusal; stop without monitoring.
+
+No additional diagnostic or generation is performed before the authorized launch.
+New p8 tests cover low-VRAM refusal without a marker/output/DB/dispatch, run-4
+limits and scope, different-output repeat refusal and preservation of prior claims.
+The native transport, retries, 24h keep-alive and strict persona validation are
+unchanged; the previously approved warm-up uses arrival plus 100%-GPU readiness.
+The pre-launch outcome will be recorded separately after the committed revision
+is known. Do not unload models or bypass a refusal; stop if readiness fails.
+
+Run-4 gate [x]: make gate PHASE=8 exited 0; 630 backend tests and 23 frontend
+tests passed, with lint/format, strict mypy, ESLint and TypeScript. No live
+generation occurred in the gate. The original 19 frozen input hashes match.
+
+Gate output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 86%]
+tests\test_sim_world.py ......                                           [ 87%]
+tests\test_stats_experiment.py ......................                    [ 91%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 95%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 630 passed, 1 warning in 165.89s (0:02:45) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  21:47:32
+   Duration  2.02s (environment 68%, setup 16%, tests 14%, transform 1%, import 1%)
+
+P8 gate PASS
+```
+
+### P8 persona connectivity diagnostic (2026-11-04)
+
+Deliverables:
+- Diagnose empty warm-up replies with at most five local gemma3:12b calls and no Gemini.
+- Keep raw synthetic diagnostic outputs under .cache and preserve all run markers.
+- Make warm-up require response arrival and 100%-GPU placement, retaining strict persona validation.
+- Retain VRAM checks and prepare separate run-4 one-shot launch wiring for approval.
+- Prove a real persona turn, run the offline P8 gate, show the diff and stop uncommitted.
+
+Diagnostic: four local calls total, exact provider API cost $0. Both native and
+OpenAI-compatible adapters returned {} for the frozen empty-event warm-up, each
+using 275 input / 2 output tokens. The required text field was absent. This
+reproduces run 3's schema failure and is not evidence of a hardware timeout.
+Raw outputs and trace metadata: .cache/p8-persona-diagnostic-2026-11-04/.
+
+Native transport is retained: the final real persona turn passed RenderedText
+and validate_render through the actual LimitedRouter/native path on its first
+attempt, without fallback. The repaired live warm-up also passed its response
+and actual ollama ps 100%-GPU checks. No fifth call was used; no Gemini call or
+E4 run occurred, and no authorization marker was consumed or changed.
+
+The human explicitly changed the warm-up contract. Its previous schema-rejection
+test now checks that unused replies are discarded; new tests verify GPU refusal
+and unchanged strict persona schema/retry/fallback behavior. No persona-turn test
+or threshold was relaxed. Prompts, rules, datasets, baseline and render.py remain
+unchanged. Retry/keep-alive/native request settings are unchanged.
+
+Run-4 authorization and VRAM launch wiring remain an unapplied CLI-only patch:
+.cache/p8-e4-run4-launch-wiring.patch. Existing run-1/run-2/run-3 markers and limits
+stay intact. Do not commit, push, apply that patch or launch E4 before approval.
+
+Connectivity gate [x]: make gate PHASE=8 exited 0; 621 backend tests and 23
+frontend tests passed, with Ruff lint/format, strict mypy, ESLint and
+TypeScript. The gate made no live calls. All 19 frozen input hashes match.
+
+Gate output (last 30 lines):
+
+```text
+tests\test_sim_scoring.py .........                                      [ 86%]
+tests\test_sim_world.py ......                                           [ 87%]
+tests\test_stats_experiment.py ......................                    [ 91%]
+tests\test_stats_panel.py ...                                            [ 91%]
+tests\test_stats_patterns.py ......................                      [ 95%]
+tests\test_stats_storage.py .......                                      [ 96%]
+tests\test_storage.py ......................                             [100%]
+
+============================== warnings summary ===============================
+tests/test_scaffold.py::test_outbound_network_is_blocked
+  C:\Umich\Projects\Nof1\backend\.venv\Lib\site-packages\pytest_socket\__init__.py:138: UserWarning: A test tried to use socket.socket.
+    raise SocketBlockedError()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 621 passed, 1 warning in 178.09s (0:02:58) ==================
++ npm.cmd run test -- -t \[p[0-8]\]
+
+> nof1-frontend@0.1.0 test
+> vitest run -t \[p[0-8]\]
+
+
+ RUN  v5.0.5 C:/Umich/Projects/Nof1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  21:38:45
+   Duration  2.68s (environment 74%, setup 13%, tests 11%, transform 1%, import 1%)
+
+P8 gate PASS
+```
 
 ### P8 run-3 authorization only (2026-11-04)
 
