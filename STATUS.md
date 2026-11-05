@@ -1,8 +1,10 @@
 # STATUS
 
-CURRENT: P8
+CURRENT: P9
 
-P7 accepted. P8 awaits human review; P9 is not authorized.
+P9 is explicitly authorized by the human on 2026-11-05. P8 is accepted with
+its documented incomplete-cohort and safety limitations; this is permission to
+proceed, not a claim that the live cohort met its pre-registered criteria.
 The original safety-first evaluation is preserved separately. E4-only runs 1 and 2
 are classified as aborted infrastructure failures, with partial results retained.
 Run 1: 570 attempts, $0.12070975 known actual API cost; exact total unknown, with
@@ -13,8 +15,9 @@ schema rejection (1 local call, $0). Run 4 is PARTIAL: 2,067 dispatches, nine
 not started. CLI total-token admission stopped it before the $2/5,000 limits.
 Run 4 known actual API cost: $0.47159750; exact total unknown; unsettled hold
 $0.263344; total conservative upper bound $0.73494150. Pre-registered cohort
-gates were not evaluated because the cohort is incomplete. No new run or
-generation is authorized. CURRENT remains P8; P9 remains unauthorized.
+gates were not evaluated because the cohort is incomplete. Exactly one offline
+stats-only make eval-final is now authorized; no new live evaluation, model
+generation or held-out chat is authorized. CURRENT remains P9.
 
 Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 and its output is pasted below. Tick "Human" only when the human has approved. Do not start the next phase until told.
 
@@ -28,12 +31,35 @@ Rules: one phase at a time. Tick "Gate" only after `make gate PHASE=N` exits 0 a
 | P5 | Extraction, memory, chat orchestration | [x] | [x] |
 | P6 | Experiment loop | [x] | [x] |
 | P7 | API and frontend | [x] | [x] |
-| P8 | Chat-mode simulation and live evals | [x] | [ ] |
+| P8 | Chat-mode simulation and live evals | [x] | [x] |
 | P9 | Deploy and polish | [ ] | [ ] |
 
 Stretch (only on request): S1 MCP server, S2 model comparison, S3 pgvector recall, S4 QLoRA distillation.
 
 ## Phase log
+
+### P9 offline final evaluation and three-minute README (2026-11-05)
+
+Deliverables:
+- Freeze the accepted P8 evidence and run make eval-final once without --chat.
+- Paste the offline held-out summary here and preserve the original outputs.
+- Replace the README with the demo, architecture, measured evidence and limits.
+- Account for runs 1–4, unknown paid usage, introductory pricing and reported teardown.
+- Run offline checks, verify frozen inputs, commit/push, then stop for review.
+
+The human's explicit P9 instruction supplies the P8 progression approval required
+by the final CLI. P8 partial E4 and safety outcomes remain unchanged. The code,
+prompts, safety rules, datasets and approved baseline are frozen. A preparatory
+documentation commit is required because final evaluation refuses a dirty tree.
+The offline final command requires a positive budget argument even without chat;
+use an unused $0.01 sentinel budget and omit --chat. No LLM client is instantiated
+by that branch, no generation is authorized, and API cost is $0.
+
+The shared writer still emits legacy P3 headings and a no-held-out sentence.
+Preserve its generated files as evidence; add a clearly labeled final summary
+using the JSON cohort ranges rather than silently rewriting the raw artifact.
+README teardown status will be attributed to the human's report; no cloud
+teardown or hosted smoke is performed in this phase.
 
 ### P8 partial E4 report and budget forensics (2026-11-05)
 
